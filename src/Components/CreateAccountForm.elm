@@ -26,6 +26,7 @@ type alias Model =
   }
 
 
+init : Model
 init =
   { name = FI.withLabel "Name: "
   , emailAddress = FI.withLabel "Email: "

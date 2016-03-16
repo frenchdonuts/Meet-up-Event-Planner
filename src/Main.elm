@@ -16,6 +16,7 @@ import StartApp
 
 import Components.Hello exposing (hello)
 import Components.CreateAccountForm as CAF exposing (..)
+import Components.CreateEventForm as CEF exposing (..)
 
 
 -- APP KICK OFF!
@@ -63,6 +64,8 @@ init =
 -- 1)  an externally defined component ('hello', takes 'model' as arg)
 -- 2a) styling through CSS classes (external stylesheet)
 -- 2b) styling using inline style attribute (two variants)
+-- Swipable carousel of: CreateEventForm, GuestList, CreateAccountForm
+--   DONE button when CreateAccountForm is visible
 
 
 view address model =
@@ -70,6 +73,15 @@ view address model =
 
 
 
+{-
+div
+  [ class "mt-palette-accent", style styles.wrapper ]
+  [ hello model
+  , p [ style [ ( "color", "#FFF" ) ] ] [ text ("Elm Webpack Starter") ]
+  , button [ class "mt-button-sm", onClick address Increment ] [ text "FTW!" ]
+  , img [ src "img/elm.jpg", style [ ( "display", "block" ), ( "margin", "10px auto" ) ] ] []
+  ]
+-}
 -- UPDATE
 
 

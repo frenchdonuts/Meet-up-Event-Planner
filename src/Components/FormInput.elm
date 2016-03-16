@@ -2,7 +2,7 @@ module Components.FormInput (..) where
 
 import Date
 import Html exposing (..)
-import Html.Attributes exposing (id, value, target, type', for)
+import Html.Attributes exposing (id, value, target, type', for, autocomplete)
 import Html.Events exposing (on, targetValue)
 
 
@@ -15,12 +15,14 @@ type alias Model =
   }
 
 
+init : Model
 init =
   { label = ""
   , value = ""
   }
 
 
+withLabel : String -> Model
 withLabel label =
   { label = label
   , value = ""
@@ -96,7 +98,8 @@ view context model =
           [ id (label' ++ "-field")
           , type' inputType
           , value value'
-          , on "input" targetValue <| \str -> Signal.message dispatcher (SET_FIELD str)
+          , on "input" targetValue (\str -> Signal.message dispatcher (SET_FIELD str))
+          , autocomplete True
           ]
           []
       ]
