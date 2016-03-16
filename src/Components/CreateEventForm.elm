@@ -108,8 +108,8 @@ view dispatcher model =
       , FI.text_ (contramapWith SetName) model.name
       , FI.text_ (contramapWith SetType) model.type'
       , FI.text_ (contramapWith SetHost) model.host
-      , FI.date_ (contramapWith SetStartTime) model.startTime
-      , FI.date_ (contramapWith SetEndTime) model.endTime
+      , FI.datetime_ (contramapWith SetStartTime) model.startTime
+      , FI.datetime_ (contramapWith SetEndTime) model.endTime
       , FI.text_ (contramapWith SetLocation) model.location
       , FI.text_ (contramapWith SetOptMsg) model.optMsg
       ]

@@ -2,7 +2,7 @@ module Components.FormInput (..) where
 
 import Date
 import Html exposing (..)
-import Html.Attributes exposing (id, value, target, type', for, autocomplete)
+import Html.Attributes exposing (class, id, value, target, type', for, autocomplete)
 import Html.Events exposing (on, targetValue)
 
 
@@ -35,6 +35,7 @@ withLabel label =
 
 type Action
   = SET_FIELD String
+  | Reset
 
 
 update : Action -> Model -> Model
@@ -42,6 +43,9 @@ update action model =
   case action of
     SET_FIELD value ->
       { model | value = value }
+
+    Reset ->
+      { model | value = "" }
 
 
 
@@ -73,6 +77,11 @@ date_ =
   view_ "date"
 
 
+datetime_ : Signal.Address Action -> Model -> Html
+datetime_ =
+  view_ "datetime-local"
+
+
 view_ inputType dispatcher model =
   view
     { dispatcher = dispatcher, inputType = inputType }
@@ -92,10 +101,15 @@ view context model =
       model.value
   in
     div
-      []
-      [ label [ for (label' ++ "-field") ] [ text label' ]
+      [ class "mdl-textfield mdl-js-textfield mdl-textfield--floating-label" ]
+      [ label
+          [ class "mdl-textfield__label"
+          , for (label' ++ "-field")
+          ]
+          [ text label' ]
       , input
           [ id (label' ++ "-field")
+          , class "mdl-textfield__input"
           , type' inputType
           , value value'
           , on "input" targetValue (\str -> Signal.message dispatcher (SET_FIELD str))

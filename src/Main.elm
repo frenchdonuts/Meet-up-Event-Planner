@@ -15,8 +15,9 @@ import StartApp
 -- component import example
 
 import Components.Hello exposing (hello)
-import Components.CreateAccountForm as CAF exposing (..)
 import Components.CreateEventForm as CEF exposing (..)
+import Components.GuestList as GL exposing (..)
+import Components.CreateAccountForm as CAF exposing (..)
 
 
 -- APP KICK OFF!
@@ -47,7 +48,7 @@ port swap : Signal.Signal Bool
 
 
 type alias Model =
-  CAF.Model
+  GL.Model
 
 
 
@@ -55,7 +56,7 @@ type alias Model =
 
 
 init =
-  ( CAF.init, Effects.none )
+  ( GL.init, Effects.none )
 
 
 
@@ -69,7 +70,7 @@ init =
 
 
 view address model =
-  CAF.view address model
+  GL.view address model
 
 
 
@@ -86,7 +87,7 @@ div
 
 
 update action model =
-  ( CAF.update action model, Effects.none )
+  ( GL.update action model, Effects.none )
 
 
 
