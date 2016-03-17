@@ -14,6 +14,7 @@ import Components.FormInput as F exposing (..)
 type alias Model =
   { guests : List ( ID, String )
   , addGuestInput : String
+  , nextId : ID
   }
 
 
@@ -25,6 +26,7 @@ init : Model
 init =
   { guests = []
   , addGuestInput = ""
+  , nextId = 0
   }
 
 
@@ -38,25 +40,31 @@ type Action
   | RemoveGuest Int
 
 
+update : Action -> Model -> Model
 update action model =
   case action of
     SetAddGuestInput guest ->
       { model | addGuestInput = guest }
 
-    AddGuest guest ->
+    AddGuest guestName ->
       -- Make sure we don't add a guest with no name
-      if not (String.isEmpty guest) then
+      if not (String.isEmpty guestName) then
         { model
-          | guests = model.guests ++ [ guest ]
+          | guests = model.guests ++ [ ( model.nextId, guestName ) ]
           , addGuestInput = ""
+          , nextId = model.nextId + 1
         }
       else
         model
 
     RemoveGuest i ->
-      { model
-        | guests = List.filter (\guest -> not i == guest.id) model.guests
-      }
+      let
+        pred ( id, guestName ) =
+          not <| i == id
+      in
+        { model
+          | guests = List.filter pred model.guests
+        }
 
 
 
@@ -87,6 +95,7 @@ addGuestInput dispatcher model =
       Signal.forwardTo dispatcher SetAddGuestInput
 
     emitOnEnterKey str keycode =
+      -- Cuz 'return' apparently has a keycode of 13
       if keycode == 13 then
         AddGuest str
       else
@@ -110,21 +119,21 @@ addGuestInput dispatcher model =
       ]
 
 
-list : Signal.Address Action -> List String -> Html
+list : Signal.Address Action -> List ( ID, String ) -> Html
 list dispatcher guests =
   div [ class "mdl-list" ] (List.map (\guest -> guestItem dispatcher guest) guests)
 
 
-guestItem : Signal.Address Action -> String -> Html
-guestItem dispatcher guest =
+guestItem : Signal.Address Action -> ( ID, String ) -> Html
+guestItem dispatcher ( id, name ) =
   div
     [ class "mdl-list__item" ]
-    [ span [ class "mdl-list__item-primary-content" ] [ text guest ]
+    [ span [ class "mdl-list__item-primary-content" ] [ text name ]
     , i
         [ class "material-icons"
-        , onClick dispatcher Delete
+        , onClick dispatcher (RemoveGuest id)
         ]
-        [ text "star" ]
+        [ text "close" ]
     ]
 
 
