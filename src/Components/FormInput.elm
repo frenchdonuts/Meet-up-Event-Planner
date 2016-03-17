@@ -59,6 +59,7 @@ type alias InputType =
 type alias Context =
   { dispatcher : Signal.Address Action
   , inputType : InputType
+  , inputAttrs : List Attribute
   }
 
 
@@ -84,14 +85,14 @@ datetime_ =
 
 view_ inputType dispatcher model =
   view
-    { dispatcher = dispatcher, inputType = inputType }
+    { dispatcher = dispatcher, inputType = inputType, inputAttrs = [] }
     model
 
 
 view : Context -> Model -> Html
 view context model =
   let
-    { dispatcher, inputType } =
+    { dispatcher, inputType, inputAttrs } =
       context
 
     label' =
@@ -108,12 +109,14 @@ view context model =
           ]
           [ text label' ]
       , input
-          [ id (label' ++ "-field")
-          , class "mdl-textfield__input"
-          , type' inputType
-          , value value'
-          , on "input" targetValue (\str -> Signal.message dispatcher (SET_FIELD str))
-          , autocomplete True
-          ]
+          ([ id (label' ++ "-field")
+           , class "mdl-textfield__input"
+           , type' inputType
+           , value value'
+           , on "input" targetValue (\str -> Signal.message dispatcher (SET_FIELD str))
+           , autocomplete True
+           ]
+            ++ inputAttrs
+          )
           []
       ]
