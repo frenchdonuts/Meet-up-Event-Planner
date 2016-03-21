@@ -1,7 +1,7 @@
 module Components.BioForm (..) where
 
 import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html.Attributes as A exposing (..)
 import Components.FormInput as FI exposing (..)
 
 
@@ -16,9 +16,9 @@ type alias Model =
 
 
 init =
-  { employer = FI.withLabel "Employer: "
-  , jobTitle = FI.withLabel "Job Title: "
-  , birthday = FI.withLabel "Birthday: "
+  { employer = FI.init "Employer (optional): " ""
+  , jobTitle = FI.init "Job Title (optional): " ""
+  , birthday = FI.init "Birthday (optional): " ""
   }
 
 
@@ -75,7 +75,12 @@ view dispatcher model =
   in
     div
       []
-      [ FI.text_ (contramapWith SetEmployer) model.employer
-      , FI.text_ (contramapWith SetJobTitle) model.jobTitle
-      , FI.date_ (contramapWith SetBirthday) model.birthday
+      [ div
+          [ class "row" ]
+          [ FI.text_ (contramapWith SetEmployer) model.employer FI.alwaysValid
+          , FI.text_ (contramapWith SetJobTitle) model.jobTitle FI.alwaysValid
+          ]
+      , div
+          [ class "row" ]
+          [ FI.date_ (contramapWith SetBirthday) model.birthday ]
       ]

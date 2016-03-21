@@ -14,7 +14,6 @@ import StartApp
 
 -- component import example
 
-import Components.Hello exposing (hello)
 import Components.CreateEventForm as CEF exposing (..)
 import Components.GuestList as GL exposing (..)
 import Components.CreateAccountForm as CAF exposing (..)
@@ -48,29 +47,80 @@ port swap : Signal.Signal Bool
 
 
 type alias Model =
-  GL.Model
+  { createEventForm : CEF.Model
+  , guestList : GL.Model
+  , createAccountForm : CAF.Model
+  }
 
 
 
 -- INIT
 
 
+pureInit =
+  { createEventForm = CEF.init
+  , guestList = GL.init
+  , createAccountForm = CAF.init
+  }
+
+
 init =
-  ( GL.init, Effects.none )
+  ( pureInit, Effects.none )
+
+
+
+-- UPDATE
+
+
+type Action
+  = CreateEventForm CEF.Action
+  | GuestList GL.Action
+  | CreateAccountForm CAF.Action
+
+
+update action model =
+  case action of
+    CreateEventForm a ->
+      ( { model | createEventForm = CEF.update a model.createEventForm }, Effects.none )
+
+    GuestList a ->
+      ( { model | guestList = GL.update a model.guestList }, Effects.none )
+
+    CreateAccountForm a ->
+      ( { model | createAccountForm = CAF.update a model.createAccountForm }, Effects.none )
 
 
 
 -- VIEW
--- Examples of:
--- 1)  an externally defined component ('hello', takes 'model' as arg)
--- 2a) styling through CSS classes (external stylesheet)
--- 2b) styling using inline style attribute (two variants)
 -- Swipable carousel of: CreateEventForm, GuestList, CreateAccountForm
 --   DONE button when CreateAccountForm is visible
 
 
-view address model =
-  GL.view address model
+view dispatcher model =
+  let
+    forwardWith =
+      Signal.forwardTo dispatcher
+  in
+    -- Html.form [ autocomplete True ]
+    Html.form
+      [ class "container", autocomplete True ]
+      [ div
+          [ class "row" ]
+          [ h3 [] [ text "Hi! Tell me a little bit about your event." ] ]
+      , CEF.view (forwardWith CreateEventForm) model.createEventForm
+        --, GL.view (forwardWith GuestList) model.guestList
+        --, CAF.view (forwardWith CreateAccountForm) model.createAccountForm
+      ]
+
+
+navbar =
+  nav
+    []
+    [ div
+        [ class "nav-wrapper" ]
+        [ ul [ class "left" ] <| List.map (\str -> li [] [ text str ]) [ "Sign-Up", "Create Event", "Invite Guests", "Review" ]
+        ]
+    ]
 
 
 
@@ -83,14 +133,6 @@ div
   , img [ src "img/elm.jpg", style [ ( "display", "block" ), ( "margin", "10px auto" ) ] ] []
   ]
 -}
--- UPDATE
-
-
-update action model =
-  ( GL.update action model, Effects.none )
-
-
-
 -- CSS STYLES
 
 

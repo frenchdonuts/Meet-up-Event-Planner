@@ -81,14 +81,36 @@ view dispatcher model =
       Signal.forwardTo dispatcher
   in
     div
-      []
-      [ h1 [] [ text "Who are the special people?" ]
-      , addGuestInput dispatcher model.addGuestInput
-      , addBtn (contramapWith AddGuest) model.addGuestInput
-      , list dispatcher model.guests
+      [ class "container" ]
+      [ h3
+          []
+          [ text "Who's invited?" ]
+      , list dispatcher model
       ]
 
 
+list : Signal.Address Action -> Model -> Html
+list dispatcher model =
+  let
+    contramapWith =
+      Signal.forwardTo dispatcher
+  in
+    ul
+      [ class "collection with-header" ]
+      <| [ li
+            [ class "collection-header", style [ ( "margin-top", "20px" ) ] ]
+            [ div
+                [ class "row" ]
+                [ addGuestInput dispatcher model.addGuestInput
+                , addBtn (contramapWith AddGuest) model.addGuestInput
+                ]
+              --, h4 [] [ text "Guests" ]
+            ]
+         ]
+      ++ (List.map (\guest -> guestItem dispatcher guest) model.guests)
+
+
+addGuestInput : Signal.Address Action -> String -> Html
 addGuestInput dispatcher model =
   let
     contramapWithSetAddGuestInput =
@@ -102,45 +124,43 @@ addGuestInput dispatcher model =
         AddGuest ""
   in
     div
-      [ class "mdl-textfield mdl-js-textfield mdl-textfield--floating-label" ]
-      [ label
-          [ class "mdl-textfield__label"
-          , for "add-guest-input"
-          ]
-          [ text "Guest Name" ]
+      [ class "input-field col s6 offset-s2" ]
+      [ label [ for "add-guest-input" ] [ text "Guest Name" ]
       , input
           [ id "add-guest-input"
-          , class "mdl-textfield__input"
+          , type' "text"
           , on "input" targetValue (\str -> Signal.message dispatcher (SetAddGuestInput str))
           , onKeyPress dispatcher (emitOnEnterKey model)
           , value model
+          , placeholder ""
           ]
           []
       ]
 
 
-list : Signal.Address Action -> List ( ID, String ) -> Html
-list dispatcher guests =
-  div [ class "mdl-list" ] (List.map (\guest -> guestItem dispatcher guest) guests)
+addBtn : Signal.Address String -> String -> Html
+addBtn dispatcher guest =
+  button
+    [ class "waves-effect waves-light btn col s2"
+    , onClick dispatcher guest
+    ]
+    [ text "Add" ]
 
 
 guestItem : Signal.Address Action -> ( ID, String ) -> Html
 guestItem dispatcher ( id, name ) =
-  div
-    [ class "mdl-list__item" ]
-    [ span [ class "mdl-list__item-primary-content" ] [ text name ]
-    , i
-        [ class "material-icons"
-        , onClick dispatcher (RemoveGuest id)
+  li
+    [ class "collection-item row" ]
+    [ div
+        []
+        [ text name
+        , span
+            [ class "secondary-content" ]
+            [ i
+                [ class "material-icons"
+                , onClick dispatcher (RemoveGuest id)
+                ]
+                [ text "close" ]
+            ]
         ]
-        [ text "close" ]
     ]
-
-
-addBtn : Signal.Address String -> String -> Html
-addBtn dispatcher guest =
-  button
-    [ class "mdl-button mdl-js-button mdl-button--raised mdl-button--colored"
-    , onClick dispatcher guest
-    ]
-    [ text "Add" ]

@@ -1,10 +1,11 @@
 module Components.CreateAccountForm (..) where
 
 import Html exposing (..)
-import Html.Attributes exposing (id, value, target, type', for)
+import Html.Attributes as A exposing (..)
 import Html.Events exposing (..)
 import Components.FormInput as FI exposing (..)
 import Components.BioForm as Bio exposing (..)
+import Validate exposing (..)
 
 
 {-
@@ -28,33 +29,33 @@ type alias Model =
 
 init : Model
 init =
-  { name = FI.withLabel "Name: "
-  , emailAddress = FI.withLabel "Email: "
-  , password = FI.withLabel "Password: "
+  { name = FI.init "Name: " ""
+  , emailAddress = FI.init "Email: " ""
+  , password = FI.init "Password: " ""
   , bio = Bio.init
   }
 
 
 type Action
-  = SET_NAME FI.Action
-  | SET_EMAIL_ADDRESS FI.Action
-  | SET_PASSWORD FI.Action
-  | SET_BIO Bio.Action
+  = UpdateNameInput FI.Action
+  | UpdateEmailAddressInput FI.Action
+  | UpdatePasswordInput FI.Action
+  | UpdateBioForm Bio.Action
 
 
 update : Action -> Model -> Model
 update action model =
   case action of
-    SET_NAME fiAction ->
+    UpdateNameInput fiAction ->
       { model | name = FI.update fiAction model.name }
 
-    SET_EMAIL_ADDRESS fiAction ->
+    UpdateEmailAddressInput fiAction ->
       { model | emailAddress = FI.update fiAction model.emailAddress }
 
-    SET_PASSWORD fiAction ->
+    UpdatePasswordInput fiAction ->
       { model | password = FI.update fiAction model.password }
 
-    SET_BIO bioAction ->
+    UpdateBioForm bioAction ->
       { model | bio = Bio.update bioAction model.bio }
 
 
@@ -63,12 +64,23 @@ view dispatcher model =
   let
     contramapWith =
       Signal.forwardTo dispatcher
+
+    emailValidator =
+      all
+        [ ifBlank "Please put in your email."
+        , ifInvalidEmail "Please put in a valid email."
+        ]
   in
-    form
-      []
-      [ h1 [] [ text "Let's create your account!" ]
-      , FI.text_ (contramapWith SET_NAME) model.name
-      , FI.text_ (contramapWith SET_EMAIL_ADDRESS) model.emailAddress
-      , FI.password_ (contramapWith SET_PASSWORD) model.password
-      , Bio.view (contramapWith SET_BIO) model.bio
+    div
+      [ class "container" ]
+      [ h1 [] [ text "One last thing..." ]
+      , div
+          [ class "row" ]
+          [ FI.text_ (contramapWith UpdateNameInput) model.name (ifBlank "Please put in your name.")
+          , FI.text_ (contramapWith UpdateEmailAddressInput) model.emailAddress emailValidator
+          ]
+      , div
+          [ class "row" ]
+          [ FI.password_ (contramapWith UpdatePasswordInput) model.password (ifBlank "Please put in a password.") ]
+      , Bio.view (contramapWith UpdateBioForm) model.bio
       ]

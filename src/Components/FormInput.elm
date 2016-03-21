@@ -1,32 +1,41 @@
 module Components.FormInput (..) where
 
 import Date
+import String exposing (join)
 import Html exposing (..)
-import Html.Attributes exposing (class, id, value, target, type', for, autocomplete)
-import Html.Events exposing (on, targetValue)
+import Html.Attributes as A exposing (..)
+import Html.Events as E exposing (..)
+import Validate exposing (..)
 
 
 -- MODEL
 
 
+type alias Err =
+  String
+
+
+type alias Value =
+  String
+
+
 type alias Model =
-  { label : String
-  , value : String
+  { label' : String
+  , value' : String
+  , validationResult : List String
   }
 
 
-init : Model
-init =
-  { label = ""
-  , value = ""
+init : String -> String -> Model
+init label value =
+  { label' = label
+  , value' = value
+  , validationResult = []
   }
 
 
-withLabel : String -> Model
-withLabel label =
-  { label = label
-  , value = ""
-  }
+alwaysValid =
+  ifInvalid (\_ -> False) ""
 
 
 
@@ -34,18 +43,22 @@ withLabel label =
 
 
 type Action
-  = SET_FIELD String
+  = SetValue String
   | Reset
+  | Validate (Validator Err Value)
 
 
 update : Action -> Model -> Model
 update action model =
   case action of
-    SET_FIELD value ->
-      { model | value = value }
+    SetValue value ->
+      { model | value' = value }
 
     Reset ->
-      { model | value = "" }
+      { model | value' = "" }
+
+    Validate validator ->
+      { model | validationResult = validator model.value' }
 
 
 
@@ -60,63 +73,108 @@ type alias Context =
   { dispatcher : Signal.Address Action
   , inputType : InputType
   , inputAttrs : List Attribute
+  , validator : Validator Err Value
   }
 
 
-text_ : Signal.Address Action -> Model -> Html
+text_ : Signal.Address Action -> Model -> Validator Err Value -> Html
 text_ =
   view_ "text"
 
 
-password_ : Signal.Address Action -> Model -> Html
+password_ : Signal.Address Action -> Model -> Validator Err Value -> Html
 password_ =
   view_ "password"
 
 
 date_ : Signal.Address Action -> Model -> Html
-date_ =
-  view_ "date"
+date_ dispatcher { label', value' } =
+  div
+    [ class "col s6" ]
+    [ label
+        [ for (label' ++ "-field")
+        ]
+        [ text label' ]
+    , input
+        [ id (label' ++ "-field")
+        , type' "date"
+        , value value'
+        , on "input" targetValue (\str -> Signal.message dispatcher (SetValue str))
+        , autocomplete True
+        ]
+        []
+    ]
 
 
 datetime_ : Signal.Address Action -> Model -> Html
-datetime_ =
-  view_ "datetime-local"
+datetime_ dispatcher { label', value' } =
+  div
+    [ class "col s6" ]
+    [ label
+        [ for (label' ++ "-field")
+        ]
+        [ text label' ]
+    , input
+        [ id (label' ++ "-field")
+        , type' "datetime-local"
+        , value value'
+        , on "input" targetValue (\str -> Signal.message dispatcher (SetValue str))
+        , autocomplete True
+        ]
+        []
+    ]
 
 
-view_ inputType dispatcher model =
+view_ inputType dispatcher model validator =
   view
-    { dispatcher = dispatcher, inputType = inputType, inputAttrs = [] }
+    { dispatcher = dispatcher, inputType = inputType, inputAttrs = [], validator = validator }
     model
 
 
 view : Context -> Model -> Html
 view context model =
   let
-    { dispatcher, inputType, inputAttrs } =
+    { dispatcher, inputType, inputAttrs, validator } =
       context
 
-    label' =
-      model.label
+    -- Move label' to context^ ?
+    { label', value', validationResult } =
+      model
 
-    value' =
-      model.value
+    inputClass =
+      case validationResult of
+        [] ->
+          ""
+
+        _ ->
+          "invalid"
+
+    validateWith =
+      validate dispatcher
   in
     div
-      [ class "mdl-textfield mdl-js-textfield mdl-textfield--floating-label" ]
-      [ label
-          [ class "mdl-textfield__label"
-          , for (label' ++ "-field")
-          ]
-          [ text label' ]
-      , input
+      [ class "input-field col s6" ]
+      [ input
           ([ id (label' ++ "-field")
-           , class "mdl-textfield__input"
+           , class inputClass
            , type' inputType
            , value value'
-           , on "input" targetValue (\str -> Signal.message dispatcher (SET_FIELD str))
+           , on "input" targetValue (\str -> Signal.message dispatcher (SetValue str))
+           , validateWith validator
            , autocomplete True
+           , placeholder ""
            ]
             ++ inputAttrs
           )
           []
+      , label
+          [ for (label' ++ "-field")
+          , attribute "data-error" (join "," validationResult)
+          ]
+          [ text label' ]
       ]
+
+
+validate : Signal.Address Action -> Validator Err Value -> Attribute
+validate dispatcher validator =
+  onBlur dispatcher (Validate validator)

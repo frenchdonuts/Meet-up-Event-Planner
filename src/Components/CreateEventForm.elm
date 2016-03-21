@@ -2,9 +2,10 @@ module Components.CreateEventForm (..) where
 
 import List exposing (..)
 import Html exposing (..)
-import Html.Attributes exposing (id)
+import Html.Attributes as A exposing (..)
 import Html.Events exposing (..)
 import Components.FormInput as FI exposing (..)
+import Validate exposing (..)
 
 
 {-
@@ -29,7 +30,7 @@ type alias Model =
   , startTime : FI.Model
   , endTime : FI.Model
   , location : FI.Model
-  , optMsg : FI.Model
+  , optMsg : String
   }
 
 
@@ -43,13 +44,13 @@ type alias Event =
 
 init : Model
 init =
-  { name = FI.withLabel "Event Name: "
-  , type' = FI.withLabel "Event Type: "
-  , host = FI.withLabel "Event Host: "
-  , startTime = FI.withLabel "Start Time: "
-  , endTime = FI.withLabel "End Time: "
-  , location = FI.withLabel "Location: "
-  , optMsg = FI.withLabel "Optional message: "
+  { name = FI.init "Event Name: " ""
+  , type' = FI.init "Event Type: " ""
+  , host = FI.init "Event Host: " ""
+  , startTime = FI.init "Start Time: " ""
+  , endTime = FI.init "End Time: " ""
+  , location = FI.init "Location: " ""
+  , optMsg = ""
   }
 
 
@@ -58,38 +59,38 @@ init =
 
 
 type Action
-  = SetName FI.Action
-  | SetType FI.Action
-  | SetHost FI.Action
-  | SetStartTime FI.Action
-  | SetEndTime FI.Action
-  | SetLocation FI.Action
-  | SetOptMsg FI.Action
+  = UpdateNameInput FI.Action
+  | UpdateTypeInput FI.Action
+  | UpdateHostInput FI.Action
+  | UpdateStartTimeInput FI.Action
+  | UpdateEndTimeInput FI.Action
+  | UpdateLocationInput FI.Action
+  | UpdateOptMsgInput String
 
 
 update : Action -> Model -> Model
 update action model =
   case action of
-    SetName a ->
+    UpdateNameInput a ->
       { model | name = FI.update a model.name }
 
-    SetType a ->
+    UpdateTypeInput a ->
       { model | type' = FI.update a model.type' }
 
-    SetHost a ->
+    UpdateHostInput a ->
       { model | host = FI.update a model.host }
 
-    SetStartTime a ->
+    UpdateStartTimeInput a ->
       { model | startTime = FI.update a model.startTime }
 
-    SetEndTime a ->
+    UpdateEndTimeInput a ->
       { model | endTime = FI.update a model.endTime }
 
-    SetLocation a ->
+    UpdateLocationInput a ->
       { model | location = FI.update a model.location }
 
-    SetOptMsg a ->
-      { model | optMsg = FI.update a model.optMsg }
+    UpdateOptMsgInput msg ->
+      { model | optMsg = msg }
 
 
 
@@ -102,19 +103,54 @@ view dispatcher model =
     contramapWith =
       Signal.forwardTo dispatcher
   in
-    form
-      []
-      [ h1 [] [ text "Hi! Tell me about your event!" ]
-      , FI.text_ (contramapWith SetName) model.name
-      , FI.text_ (contramapWith SetType) model.type'
-      , FI.text_ (contramapWith SetHost) model.host
-      , FI.datetime_ (contramapWith SetStartTime) model.startTime
-      , FI.datetime_ (contramapWith SetEndTime) model.endTime
-      , FI.text_ (contramapWith SetLocation) model.location
-      , FI.text_ (contramapWith SetOptMsg) model.optMsg
+    div
+      [ class "row valign" ]
+      [ div
+          [ class "section" ]
+          [ h5 [] [ text "" ]
+          , div
+              [ class "row" ]
+              [ FI.text_ (contramapWith UpdateNameInput) model.name (ifBlank "Please give this event a name.")
+              , FI.text_ (contramapWith UpdateTypeInput) model.type' (ifBlank "What kind of event is it?")
+              ]
+          , div [ class "row" ] []
+          , div [ class "row" ] []
+          , div
+              [ class "row" ]
+              [ FI.text_ (contramapWith UpdateHostInput) model.host (ifBlank "Who's the host?")
+              , FI.text_ (contramapWith UpdateLocationInput) model.location (ifBlank "Where is the event going to be held?")
+              ]
+          , div [ class "row" ] []
+          , div [ class "row" ] []
+          , div
+              [ class "row" ]
+              [ FI.datetime_ (contramapWith UpdateStartTimeInput) model.startTime
+              , FI.datetime_ (contramapWith UpdateEndTimeInput) model.endTime
+              ]
+          , div
+              [ class "row" ]
+              [ textarea_ dispatcher model.optMsg ]
+          ]
       ]
 
 
-guestView : String -> Html
-guestView guest =
-  li [] [ text guest ]
+
+-- Two problems that might be connected:
+--   Validation based on TWO inputs: StartTime < EndTime
+--   Checking if every single input is VALID
+-- Let's see if we can/should move validation to the UPDATE step
+-- The only reasonable solution is to move Validation logic up to this component (CreateEventForm).
+
+
+textarea_ dispatcher optMsg =
+  div
+    [ class "input-field col s12" ]
+    [ textarea
+        [ id "optional-msg"
+        , class "materialize-textarea"
+        , placeholder ""
+        , on "input" targetValue (\str -> Signal.message dispatcher (UpdateOptMsgInput str))
+        ]
+        [ text optMsg ]
+    , label [ for "optional-msg" ] [ text "Message to your guests (optional)" ]
+    ]
