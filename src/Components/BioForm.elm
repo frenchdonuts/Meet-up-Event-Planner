@@ -1,39 +1,34 @@
 module Components.BioForm (..) where
 
+import Regex
 import Html exposing (..)
 import Html.Attributes as A exposing (..)
-import Components.FormInput as FI exposing (..)
+import Components.Field as F exposing (..)
+import Validate exposing (..)
 
 
 -- MODEL
 
 
 type alias Model =
-  { employer : FI.Model
-  , jobTitle : FI.Model
-  , birthday : FI.Model
+  { employer : Field
+  , jobTitle : Field
+  , birthday : Field
   }
 
 
 init =
-  { employer = FI.init "Employer (optional): " ""
-  , jobTitle = FI.init "Job Title (optional): " ""
-  , birthday = FI.init "Birthday (optional): " ""
+  { employer = validatedField "Employer (optional): " "text" alwaysValid
+  , jobTitle = validatedField "Job Title (optional): " "text" alwaysValid
+  , birthday = validatedField "Birthday (optional): " "date" alwaysValid
   }
 
 
-type alias Date =
-  { month : Int
-  , day : Int
-  , year : Int
-  }
-
-
-defaultDate =
-  { month = 0
-  , day = 0
-  , year = 0
-  }
+isComplete : Model -> Bool
+isComplete model =
+  fieldIsValid model.employer
+    && fieldIsValid model.jobTitle
+    && fieldIsValid model.birthday
 
 
 
@@ -41,9 +36,9 @@ defaultDate =
 
 
 type Action
-  = SetEmployer FI.Action
-  | SetJobTitle FI.Action
-  | SetBirthday FI.Action
+  = SetEmployer F.Action
+  | SetJobTitle F.Action
+  | SetBirthday F.Action
 
 
 update : Action -> Model -> Model
@@ -54,13 +49,13 @@ update action model =
   in
     case action of
       SetEmployer a ->
-        { model | employer = FI.update a employer }
+        { model | employer = F.update a employer }
 
       SetJobTitle a ->
-        { model | jobTitle = FI.update a jobTitle }
+        { model | jobTitle = F.update a jobTitle }
 
       SetBirthday a ->
-        { model | birthday = FI.update a birthday }
+        { model | birthday = F.update a birthday }
 
 
 
@@ -77,10 +72,10 @@ view dispatcher model =
       []
       [ div
           [ class "row" ]
-          [ FI.text_ (contramapWith SetEmployer) model.employer FI.alwaysValid
-          , FI.text_ (contramapWith SetJobTitle) model.jobTitle FI.alwaysValid
+          [ F.view (contramapWith SetEmployer) model.employer
+          , F.view (contramapWith SetJobTitle) model.jobTitle
           ]
       , div
           [ class "row" ]
-          [ FI.date_ (contramapWith SetBirthday) model.birthday ]
+          [ F.view (contramapWith SetBirthday) model.birthday ]
       ]

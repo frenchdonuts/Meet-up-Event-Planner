@@ -81,11 +81,8 @@ view dispatcher model =
       Signal.forwardTo dispatcher
   in
     div
-      [ class "container" ]
-      [ h3
-          []
-          [ text "Who's invited?" ]
-      , list dispatcher model
+      [ class "row" ]
+      [ list dispatcher model
       ]
 
 
@@ -125,8 +122,7 @@ addGuestInput dispatcher model =
   in
     div
       [ class "input-field col s6 offset-s2" ]
-      [ label [ for "add-guest-input" ] [ text "Guest Name" ]
-      , input
+      [ input
           [ id "add-guest-input"
           , type' "text"
           , on "input" targetValue (\str -> Signal.message dispatcher (SetAddGuestInput str))
@@ -135,6 +131,7 @@ addGuestInput dispatcher model =
           , placeholder ""
           ]
           []
+      , label [ for "add-guest-input", class "active" ] [ text "Guest Name" ]
       ]
 
 

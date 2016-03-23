@@ -1,91 +1,172 @@
 -- Taken from: https://gist.github.com/TheSeamau5/25aede445f2942234588
+--  and modified
+
+
 module Components.Field (..) where
 
-import Html exposing (Html, Attribute)
-import Html.Attributes
-import Html.Events
+import Html as H exposing (..)
+import Html.Attributes as A exposing (..)
+import Html.Events as E exposing (..)
 import Signal exposing (Address)
 import Validate exposing (..)
+import String exposing (join)
 
 
 -- The state of a field
+
+
 type alias Field =
   { label : String
   , value : String
-  , isRequired : Bool
+  , type' : String
+  , validator : Validator String String
+  , errors : List String
   }
+
+
 
 -- Test if a field is considered completed
 -- In this case we consider a field complete if it is non-empty
-fieldIsCompleted : Field -> Bool
-fieldIsCompleted field =
-  if field.isRequired
-  then
-    String.length field.value > 0
-  else
-    True
+
+
+fieldIsValid : Field -> Bool
+fieldIsValid field =
+  case field.validator field.value of
+    [] ->
+      True
+
+    _ ->
+      False
+
+
+alwaysValid : Validator String String
+alwaysValid =
+  ifInvalid (\_ -> False) ""
+
 
 
 -- Constructor for an optional field
-optionalField : String -> Field
-optionalField label =
+
+
+optionalField : String -> String -> Field
+optionalField label type' =
   { label = label
   , value = ""
-  , isRequired = False
+  , type' = type'
+  , validator = alwaysValid
+  , errors = []
   }
+
+
 
 -- Constructor for a required field
-requiredField : String -> Field
-requiredField label =
+
+
+validatedField : String -> String -> Validator String String -> Field
+validatedField label type' validator =
   { label = label
   , value = ""
-  , isRequired = True
+  , type' = type'
+  , validator = validator
+  , errors = []
   }
 
 
-labelColor : Field -> String
-labelColor field =
-  if not field.isRequired
-  then "black"
+inputClass : Field -> String
+inputClass field =
+  if fieldIsValid field then
+    ""
   else
-    if fieldIsCompleted field
-    then
-      "green"
-    else
-      "red"
+    "invalid"
+
+
+containerClass : Field -> String
+containerClass field =
+  if field.type' == "datetime-local" then
+    "col s6"
+  else
+    "input-field col s6"
+
+
 
 -- The actions that can update a field
-type FieldAction
+
+
+type Action
   = SetValue String
+  | Validate
+
 
 
 -- The update function for fields
-updateField : FieldAction -> Field -> Field
-updateField action field =
+
+
+update : Action -> Field -> Field
+update action field =
   case action of
     SetValue value ->
-      { field | value <- value }
+      { field | value = value }
+
+    Validate ->
+      { field | errors = field.validator field.value }
+
 
 
 -- The view function for fields
-viewField : Address FieldAction -> Field -> Html
-viewField address field =
-  let
-      -- Your CSS here
-      containerStyle =
-          []
 
-      labelStyle =
-          [ "color" => labelColor field ]
+
+view : Address Action -> Field -> Html
+view address field =
+  let
+    -- Your CSS here
+    containerStyle =
+      []
   in
-      Html.div
-          [ Html.Attributes.style containerStyle ]
-          [ Html.span
-                [ Html.Attributes.style labelStyle ]
-                [ Html.text field.label ]
-          , Html.input
-                [ onInput address SetValue
-                , Html.Attributes.value field.value
-                ]
-                []
+    H.div
+      [ class "input-field col s6" ]
+      --(containerClass field) ]
+      [ H.input
+          [ id (field.label ++ "-field")
+          , class (inputClass field)
+          , type' field.type'
+          , value field.value
+          , onInput address SetValue
+          , onBlur address Validate
+          , autocomplete True
+          , placeholder ""
           ]
+          []
+      , label
+          [ for (field.label ++ "-field")
+          , attribute "data-error" (join "\n" field.errors)
+          , class "active"
+          ]
+          [ text field.label ]
+      ]
+
+
+onInput : Address a -> (String -> a) -> Attribute
+onInput address constructor =
+  E.on "input" E.targetValue (constructor >> Signal.message address)
+
+
+disabledView : Field -> Html
+disabledView field =
+  H.div
+    [ class "input-field col s6" ]
+    --(containerClass field) ]
+    [ H.input
+        [ id (field.label ++ "-field")
+        , disabled True
+        , class (inputClass field)
+        , type' field.type'
+        , value field.value
+        , placeholder ""
+        ]
+        []
+    , label
+        [ for (field.label ++ "-field")
+        , class "active"
+        ]
+        [ text field.label ]
+    ]

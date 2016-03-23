@@ -10,13 +10,11 @@ import Effects exposing (Effects)
 -- https://github.com/evancz/start-app
 
 import StartApp
-
-
--- component import example
-
+import Components.SelectionList exposing (..)
 import Components.CreateEventForm as CEF exposing (..)
 import Components.GuestList as GL exposing (..)
 import Components.CreateAccountForm as CAF exposing (..)
+import Components.Summary as S exposing (..)
 
 
 -- APP KICK OFF!
@@ -46,10 +44,18 @@ port swap : Signal.Signal Bool
 -- MODEL
 
 
+type Page
+  = CreateAccountForm
+  | CreateEventForm
+  | GuestList
+  | Summary
+
+
 type alias Model =
   { createEventForm : CEF.Model
   , guestList : GL.Model
   , createAccountForm : CAF.Model
+  , pages : SelectionList Page
   }
 
 
@@ -61,6 +67,7 @@ pureInit =
   { createEventForm = CEF.init
   , guestList = GL.init
   , createAccountForm = CAF.init
+  , pages = newSelectionList CreateAccountForm [ CreateEventForm, GuestList, Summary ]
   }
 
 
@@ -73,73 +80,108 @@ init =
 
 
 type Action
-  = CreateEventForm CEF.Action
-  | GuestList GL.Action
-  | CreateAccountForm CAF.Action
+  = UpdateCreateEventForm CEF.Action
+  | UpdateGuestList GL.Action
+  | UpdateCreateAccountForm CAF.Action
+  | NextPage
+  | PrevPage
 
 
 update action model =
   case action of
-    CreateEventForm a ->
+    UpdateCreateEventForm a ->
       ( { model | createEventForm = CEF.update a model.createEventForm }, Effects.none )
 
-    GuestList a ->
+    UpdateGuestList a ->
       ( { model | guestList = GL.update a model.guestList }, Effects.none )
 
-    CreateAccountForm a ->
+    UpdateCreateAccountForm a ->
       ( { model | createAccountForm = CAF.update a model.createAccountForm }, Effects.none )
+
+    NextPage ->
+      if curPageIsValid model.pages.current model then
+        ( { model | pages = forward model.pages }, Effects.none )
+      else
+        ( model, Effects.none )
+
+    PrevPage ->
+      ( { model | pages = back model.pages }, Effects.none )
+
+
+curPageIsValid : Page -> Model -> Bool
+curPageIsValid page model =
+  case page of
+    CreateAccountForm ->
+      CAF.isComplete model.createAccountForm
+
+    CreateEventForm ->
+      CEF.isComplete model.createEventForm
+
+    GuestList ->
+      True
+
+    Summary ->
+      True
 
 
 
 -- VIEW
--- Swipable carousel of: CreateEventForm, GuestList, CreateAccountForm
---   DONE button when CreateAccountForm is visible
 
 
 view dispatcher model =
   let
     forwardWith =
       Signal.forwardTo dispatcher
+
+    header page =
+      case page of
+        CreateAccountForm ->
+          text "Hi! Tell me a little bit about yourself!"
+
+        CreateEventForm ->
+          text "Hi! Tell me a little bit about your event."
+
+        GuestList ->
+          text "Who's invited?"
+
+        Summary ->
+          text "Please review your information."
+
+    curPage page =
+      case page of
+        CreateAccountForm ->
+          CAF.view (forwardWith UpdateCreateAccountForm) model.createAccountForm
+
+        CreateEventForm ->
+          CEF.view (forwardWith UpdateCreateEventForm) model.createEventForm
+
+        GuestList ->
+          GL.view (forwardWith UpdateGuestList) model.guestList
+
+        Summary ->
+          S.view (forwardWith UpdateCreateEventForm) model.createEventForm (forwardWith UpdateGuestList) model.guestList
   in
     -- Html.form [ autocomplete True ]
-    Html.form
+    Html.div
       [ class "container", autocomplete True ]
-      [ div
+      [ -- Header
+        div
           [ class "row" ]
-          [ h3 [] [ text "Hi! Tell me a little bit about your event." ] ]
-      , CEF.view (forwardWith CreateEventForm) model.createEventForm
-        --, GL.view (forwardWith GuestList) model.guestList
-        --, CAF.view (forwardWith CreateAccountForm) model.createAccountForm
+          [ h3 [] [ header model.pages.current ] ]
+        -- Main content
+      , curPage model.pages.current
+        -- Buttons
+      , div
+          [ class "row" ]
+          [ button
+              [ class "waves-effect waves-light btn col s2"
+              , onClick dispatcher PrevPage
+              ]
+              [ text "Prev" ]
+          , button
+              [ class "waves-effect waves-light btn col s2 offset-s8"
+              , onClick dispatcher NextPage
+              ]
+              [ text "Next" ]
+          ]
       ]
-
-
-navbar =
-  nav
-    []
-    [ div
-        [ class "nav-wrapper" ]
-        [ ul [ class "left" ] <| List.map (\str -> li [] [ text str ]) [ "Sign-Up", "Create Event", "Invite Guests", "Review" ]
-        ]
-    ]
-
-
-
-{-
-div
-  [ class "mt-palette-accent", style styles.wrapper ]
-  [ hello model
-  , p [ style [ ( "color", "#FFF" ) ] ] [ text ("Elm Webpack Starter") ]
-  , button [ class "mt-button-sm", onClick address Increment ] [ text "FTW!" ]
-  , img [ src "img/elm.jpg", style [ ( "display", "block" ), ( "margin", "10px auto" ) ] ] []
-  ]
--}
--- CSS STYLES
-
-
-styles =
-  { wrapper =
-      [ ( "padding-top", "10px" )
-      , ( "padding-bottom", "20px" )
-      , ( "text-align", "center" )
-      ]
-  }
