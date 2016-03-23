@@ -123,7 +123,7 @@ curPageIsValid page model =
       True
 
     Summary ->
-      True
+      CEF.isComplete model.createEventForm
 
     Thanks ->
       True
