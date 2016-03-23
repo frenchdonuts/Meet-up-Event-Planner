@@ -133,33 +133,34 @@ view dispatcher model =
     forwardWith =
       Signal.forwardTo dispatcher
 
-    header page =
-      case page of
-        CreateAccountForm ->
-          text "Hi! Tell me a little bit about yourself!"
+    header =
+      fnOfPage
+        (text "Hi! Tell me a little bit about yourself!")
+        (text "Hi! Tell me a little bit about your event.")
+        (text "Who's invited?")
+        (text "Please review your information.")
 
-        CreateEventForm ->
-          text "Hi! Tell me a little bit about your event."
+    curPage =
+      fnOfPage
+        (CAF.view (forwardWith UpdateCreateAccountForm) model.createAccountForm)
+        (CEF.view (forwardWith UpdateCreateEventForm) model.createEventForm)
+        (GL.view (forwardWith UpdateGuestList) model.guestList)
+        (S.view (forwardWith UpdateCreateEventForm) model.createEventForm (forwardWith UpdateGuestList) model.guestList)
 
-        GuestList ->
-          text "Who's invited?"
+    visible =
+      [ ( "visibility", "visible" ) ]
 
-        Summary ->
-          text "Please review your information."
+    hidden =
+      [ ( "visibility", "hidden" ) ]
 
-    curPage page =
-      case page of
-        CreateAccountForm ->
-          CAF.view (forwardWith UpdateCreateAccountForm) model.createAccountForm
+    prevBtnStyle =
+      fnOfPage hidden visible visible visible
 
-        CreateEventForm ->
-          CEF.view (forwardWith UpdateCreateEventForm) model.createEventForm
+    nextBtnStyle =
+      fnOfPage visible visible visible visible
 
-        GuestList ->
-          GL.view (forwardWith UpdateGuestList) model.guestList
-
-        Summary ->
-          S.view (forwardWith UpdateCreateEventForm) model.createEventForm (forwardWith UpdateGuestList) model.guestList
+    nextBtnText =
+      fnOfPage "Next" "Next" "Next" "Finish"
   in
     -- Html.form [ autocomplete True ]
     Html.div
@@ -175,6 +176,7 @@ view dispatcher model =
           [ class "row" ]
           [ button
               [ class "waves-effect waves-light btn col s2"
+              , style (prevBtnStyle model.pages.current)
               , onClick dispatcher PrevPage
               ]
               [ text "Prev" ]
@@ -182,6 +184,22 @@ view dispatcher model =
               [ class "waves-effect waves-light btn col s2 offset-s8"
               , onClick dispatcher NextPage
               ]
-              [ text "Next" ]
+              [ text (nextBtnText model.pages.current) ]
           ]
       ]
+
+
+fnOfPage : a -> a -> a -> a -> Page -> a
+fnOfPage onCreateAccountForm onCreateEventForm onGuestList onSummary page =
+  case page of
+    CreateAccountForm ->
+      onCreateAccountForm
+
+    CreateEventForm ->
+      onCreateEventForm
+
+    GuestList ->
+      onGuestList
+
+    Summary ->
+      onSummary
