@@ -15,6 +15,7 @@ import Components.CreateEventForm as CEF exposing (..)
 import Components.GuestList as GL exposing (..)
 import Components.CreateAccountForm as CAF exposing (..)
 import Components.Summary as S exposing (..)
+import Components.Thanks as T exposing (..)
 
 
 -- APP KICK OFF!
@@ -49,6 +50,7 @@ type Page
   | CreateEventForm
   | GuestList
   | Summary
+  | Thanks
 
 
 type alias Model =
@@ -67,7 +69,7 @@ pureInit =
   { createEventForm = CEF.init
   , guestList = GL.init
   , createAccountForm = CAF.init
-  , pages = newSelectionList CreateAccountForm [ CreateEventForm, GuestList, Summary ]
+  , pages = newSelectionList CreateAccountForm [ CreateEventForm, GuestList, Summary, Thanks ]
   }
 
 
@@ -123,6 +125,9 @@ curPageIsValid page model =
     Summary ->
       True
 
+    Thanks ->
+      True
+
 
 
 -- VIEW
@@ -139,6 +144,7 @@ view dispatcher model =
         (text "Hi! Tell me a little bit about your event.")
         (text "Who's invited?")
         (text "Please review your information.")
+        (text "")
 
     curPage =
       fnOfPage
@@ -146,6 +152,7 @@ view dispatcher model =
         (CEF.view (forwardWith UpdateCreateEventForm) model.createEventForm)
         (GL.view (forwardWith UpdateGuestList) model.guestList)
         (S.view (forwardWith UpdateCreateEventForm) model.createEventForm (forwardWith UpdateGuestList) model.guestList)
+        T.view
 
     visible =
       [ ( "visibility", "visible" ) ]
@@ -154,17 +161,17 @@ view dispatcher model =
       [ ( "visibility", "hidden" ) ]
 
     prevBtnStyle =
-      fnOfPage hidden visible visible visible
+      fnOfPage hidden visible visible visible hidden
 
     nextBtnStyle =
-      fnOfPage visible visible visible visible
+      fnOfPage visible visible visible visible hidden
 
     nextBtnText =
-      fnOfPage "Next" "Next" "Next" "Finish"
+      fnOfPage "Next" "Next" "Next" "Finish" ""
   in
     -- Html.form [ autocomplete True ]
     Html.div
-      [ class "container", autocomplete True ]
+      [ class "container" ]
       [ -- Header
         div
           [ class "row" ]
@@ -182,6 +189,7 @@ view dispatcher model =
               [ text "Prev" ]
           , button
               [ class "waves-effect waves-light btn col s2 offset-s8"
+              , style (nextBtnStyle model.pages.current)
               , onClick dispatcher NextPage
               ]
               [ text (nextBtnText model.pages.current) ]
@@ -189,8 +197,8 @@ view dispatcher model =
       ]
 
 
-fnOfPage : a -> a -> a -> a -> Page -> a
-fnOfPage onCreateAccountForm onCreateEventForm onGuestList onSummary page =
+fnOfPage : a -> a -> a -> a -> a -> Page -> a
+fnOfPage onCreateAccountForm onCreateEventForm onGuestList onSummary onThanks page =
   case page of
     CreateAccountForm ->
       onCreateAccountForm
@@ -203,3 +211,6 @@ fnOfPage onCreateAccountForm onCreateEventForm onGuestList onSummary page =
 
     Summary ->
       onSummary
+
+    Thanks ->
+      onThanks
