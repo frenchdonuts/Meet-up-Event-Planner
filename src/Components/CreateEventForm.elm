@@ -129,32 +129,29 @@ view dispatcher model =
     div
       [ class "row" ]
       [ div
-          [ class "section" ]
-          [ div
-              [ class "row" ]
-              [ F.view (contramapWith UpdateNameInput) model.name
-              , F.view (contramapWith UpdateTypeInput) model.type'
-              ]
-          , div [ class "row" ] []
-          , div [ class "row" ] []
-          , div
-              [ class "row" ]
-              [ F.view (contramapWith UpdateHostInput) model.host
-              , F.view (contramapWith UpdateLocationInput) model.location
-              ]
-          , div [ class "row" ] []
-          , div [ class "row" ] []
-          , div
-              [ class "row" ]
-              [ F.view (contramapWith UpdateStartTimeInput) model.startTime
-              , F.view (contramapWith UpdateEndTimeInput) model.endTime
-              ]
-          , div [ class "row" ] []
-          , div [ class "row" ] []
-          , div
-              [ class "row" ]
-              [ textarea_ dispatcher model.optMsg ]
+          [ class "row" ]
+          [ F.view (contramapWith UpdateNameInput) model.name
+          , F.view (contramapWith UpdateTypeInput) model.type'
           ]
+      , div [ class "row" ] []
+      , div [ class "row" ] []
+      , div
+          [ class "row" ]
+          [ F.view (contramapWith UpdateHostInput) model.host
+          , F.view (contramapWith UpdateLocationInput) model.location
+          ]
+      , div [ class "row" ] []
+      , div [ class "row" ] []
+      , div
+          [ class "row" ]
+          [ F.view (contramapWith UpdateStartTimeInput) model.startTime
+          , F.view (contramapWith UpdateEndTimeInput) model.endTime
+          ]
+      , div [ class "row" ] []
+      , div [ class "row" ] []
+      , div
+          [ class "row" ]
+          [ textarea_ dispatcher model.optMsg ]
       ]
 
 

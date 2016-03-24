@@ -145,9 +145,55 @@ view address field =
       ]
 
 
+
+-- Use this view when you have too many validation error msgs
+
+
+bigValidatedFieldView : Address Action -> Field -> List Html
+bigValidatedFieldView address field =
+  let
+    errors =
+      List.map (\errStr -> li [] [ text errStr ]) field.errors
+
+    --      join "\n" field.errors
+    divErrorStyle =
+      [ ( "color", "#F44336" ) ]
+  in
+    [ H.div
+        [ class "input-field col s6" ]
+        [ H.input
+            [ id (field.label ++ "-field")
+            , class (inputClass field)
+            , type' field.type'
+            , value field.value
+            , onInput address SetValue
+            , onBlur address Validate
+            , autocomplete True
+            , placeholder ""
+            ]
+            []
+        , label
+            [ for (field.label ++ "-field")
+            , class "active"
+            ]
+            [ text field.label ]
+        ]
+      -- Display validation errors in this div
+    , H.ul
+        [ class "col s6"
+        , style divErrorStyle
+        ]
+        errors
+    ]
+
+
 onInput : Address a -> (String -> a) -> Attribute
 onInput address constructor =
   E.on "input" E.targetValue (constructor >> Signal.message address)
+
+
+
+-- Non-editable input
 
 
 disabledView : Field -> Html
