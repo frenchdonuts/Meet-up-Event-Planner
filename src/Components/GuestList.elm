@@ -5,6 +5,7 @@ import List exposing (..)
 import Html exposing (..)
 import Html.Attributes as A exposing (..)
 import Html.Events as E exposing (..)
+import Json.Decode as Json
 import Components.FormInput as F exposing (..)
 
 
@@ -119,14 +120,27 @@ addGuestInput dispatcher model =
         AddGuest str
       else
         AddGuest ""
+
+    is13 code =
+      if code == 13 then
+        Ok ()
+      else
+        Err "wrong key code"
   in
     div
       [ class "input-field col s6 offset-s2" ]
       [ input
           [ id "add-guest-input"
+          , class "focus-field"
           , type' "text"
           , on "input" targetValue (\str -> Signal.message dispatcher (SetAddGuestInput str))
-          , onKeyPress dispatcher (emitOnEnterKey model)
+            -- Allow User to add guest by pressing ENTER
+          , onWithOptions
+              "keypress"
+              -- preventDefault since we are inside a <form>
+              { stopPropagation = True, preventDefault = True }
+              (Json.customDecoder keyCode is13)
+              (\_ -> Signal.message dispatcher (AddGuest model))
           , value model
           , placeholder ""
           ]
@@ -138,7 +152,8 @@ addGuestInput dispatcher model =
 addBtn : Signal.Address String -> String -> Html
 addBtn dispatcher guest =
   button
-    [ class "waves-effect waves-light btn col s2"
+    [ type' "button"
+    , class "waves-effect waves-light btn col s2"
     , onClick dispatcher guest
     ]
     [ text "Add" ]

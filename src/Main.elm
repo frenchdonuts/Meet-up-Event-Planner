@@ -1,8 +1,10 @@
 module Main (..) where
 
+import Debug
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
+import Task exposing (Task)
 import Effects exposing (Effects)
 
 
@@ -35,10 +37,37 @@ main =
 
 
 
+-- Tasks
+
+
+port tasks : Signal (Task.Task Effects.Never ())
+port tasks =
+  app.tasks
+
+
+
 -- HOT-SWAPPING
 
 
 port swap : Signal.Signal Bool
+
+
+
+-- Maintaining focus on first element above the fold
+
+
+pageChanges :
+  { address : Signal.Address String
+  , signal : Signal String
+  }
+pageChanges =
+  Signal.mailbox ""
+
+
+port focus : Signal.Signal String
+port focus =
+  pageChanges.signal
+    |> Signal.map (\str -> str)
 
 
 
@@ -82,7 +111,8 @@ init =
 
 
 type Action
-  = UpdateCreateEventForm CEF.Action
+  = NoOp
+  | UpdateCreateEventForm CEF.Action
   | UpdateGuestList GL.Action
   | UpdateCreateAccountForm CAF.Action
   | NextPage
@@ -91,6 +121,9 @@ type Action
 
 update action model =
   case action of
+    NoOp ->
+      ( model, Effects.none )
+
     UpdateCreateEventForm a ->
       ( { model | createEventForm = CEF.update a model.createEventForm }, Effects.none )
 
@@ -102,12 +135,18 @@ update action model =
 
     NextPage ->
       if curPageIsValid model.pages.current model then
-        ( { model | pages = forward model.pages }, Effects.none )
+        ( { model | pages = forward model.pages }, focusFirstElementTask )
       else
         ( model, Effects.none )
 
     PrevPage ->
-      ( { model | pages = back model.pages }, Effects.none )
+      ( { model | pages = back model.pages }, focusFirstElementTask )
+
+
+focusFirstElementTask =
+  Signal.send pageChanges.address ""
+    `Task.andThen` (\_ -> (Task.succeed NoOp))
+    |> Effects.task
 
 
 curPageIsValid : Page -> Model -> Bool
@@ -141,7 +180,7 @@ view dispatcher model =
     header =
       fnOfPage
         (text "Hi! Tell me a little bit about yourself!")
-        (text "Hi! Tell me a little bit about your event.")
+        (text "I'll need some information about your event...")
         (text "Who's invited?")
         (text "Please review your information.")
         (text "")
@@ -168,10 +207,13 @@ view dispatcher model =
 
     nextBtnText =
       fnOfPage "Next" "Next" "Next" "Finish" ""
+
+    nextBtnType =
+      fnOfPage "button" "button" "button" "submit" "button"
   in
     -- Html.form [ autocomplete True ]
-    Html.div
-      [ class "container" ]
+    Html.form
+      [ class "container", autocomplete True ]
       [ -- Header
         div
           [ class "row" ]
@@ -182,13 +224,15 @@ view dispatcher model =
       , div
           [ class "row" ]
           [ button
-              [ class "waves-effect waves-light btn col s2"
+              [ type' (nextBtnType model.pages.current)
+              , class "waves-effect waves-light btn col s2"
               , style (prevBtnStyle model.pages.current)
               , onClick dispatcher PrevPage
               ]
               [ text "Prev" ]
           , button
-              [ class "waves-effect waves-light btn col s2 offset-s8"
+              [ type' "button"
+              , class "waves-effect waves-light btn col s2 offset-s8"
               , style (nextBtnStyle model.pages.current)
               , onClick dispatcher NextPage
               ]

@@ -19,6 +19,7 @@ type alias Field =
   { label : String
   , value : String
   , type' : String
+  , autofocus : Bool
   , validator : Validator String String
   , errors : List String
   }
@@ -53,6 +54,7 @@ optionalField label type' =
   { label = label
   , value = ""
   , type' = type'
+  , autofocus = False
   , validator = alwaysValid
   , errors = []
   }
@@ -67,6 +69,7 @@ validatedField label type' validator =
   { label = label
   , value = ""
   , type' = type'
+  , autofocus = False
   , validator = validator
   , errors = []
   }
@@ -74,10 +77,20 @@ validatedField label type' validator =
 
 inputClass : Field -> String
 inputClass field =
-  if fieldIsValid field then
-    ""
-  else
-    "invalid"
+  let
+    invalid =
+      if fieldIsValid field then
+        ""
+      else
+        "invalid"
+
+    focus =
+      if (field.autofocus) then
+        "focus-field"
+      else
+        ""
+  in
+    focus ++ " " ++ invalid
 
 
 containerClass : Field -> String
@@ -133,6 +146,7 @@ view address field =
           , onInput address SetValue
           , onBlur address Validate
           , autocomplete True
+          , autofocus field.autofocus
           , placeholder ""
           ]
           []

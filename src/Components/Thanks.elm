@@ -7,5 +7,5 @@ import Html.Attributes as A exposing (..)
 view : Html
 view =
   div
-    [ class "valign-wrapper" ]
-    [ h2 [ class "valign" ] [ text "Have a nice day!" ] ]
+    [ A.class "valign-wrapper" ]
+    [ H.h2 [ A.class "valign" ] [ H.text "Have a nice day!" ] ]

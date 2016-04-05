@@ -33,11 +33,13 @@ type alias Model =
 
 init : Model
 init =
-  { name = validatedField "Name: " "text" (ifBlank "What's your name?")
-  , emailAddress = validatedField "Email: " "text" (ifInvalidEmail "Please put in a valid email.")
-  , password = validatedField "Password: " "password" ifInvalidPassword
-  , bio = Bio.init
-  }
+  let name' = validatedField "Name: " "text" (ifBlank "What's your name?")
+  in
+    { name = { name' | autofocus = True } 
+    , emailAddress = validatedField "Email: " "text" (ifInvalidEmail "Please put in a valid email.")
+    , password = validatedField "Password: " "password" ifInvalidPassword
+    , bio = Bio.init
+    }
 
 
 ifInvalidPassword : Validator String String

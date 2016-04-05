@@ -42,20 +42,23 @@ type alias Event =
 
 init : Model
 init =
-  { name =
-      validatedField "Event Name: " "text" (ifBlank "Please give this event a name.")
-  , type' =
-      validatedField "Event Type: " "text" (ifBlank "What kind of event is it?")
-  , host =
-      validatedField "Event Host: " "text" (ifBlank "Who's the host?")
-  , location =
-      validatedField "Location: " "text" (ifBlank "Where is the event going to be held?")
-  , startTime =
-      validatedField "Start Time: " "datetime-local" (timeValidator "When is it goin to start?")
-  , endTime =
-      validatedField "End Time: " "datetime-local" (timeValidator "When will it end?")
-  , optMsg = ""
-  }
+  let
+    name' = validatedField "Event Name: " "text" (ifBlank "Please give this event a name.")
+  in
+    { name =
+        { name' | autofocus = True }
+    , type' =
+        validatedField "Event Type: " "text" (ifBlank "What kind of event is it?")
+    , host =
+        validatedField "Event Host: " "text" (ifBlank "Who's the host?")
+    , location =
+        validatedField "Location: " "text" (ifBlank "Where is the event going to be held?")
+    , startTime =
+        validatedField "Start Time: " "datetime-local" (timeValidator "When is it goin to start?")
+    , endTime =
+        validatedField "End Time: " "datetime-local" (timeValidator "When will it end?")
+    , optMsg = ""
+    }
 
 
 timeValidator : String -> Validator String String
