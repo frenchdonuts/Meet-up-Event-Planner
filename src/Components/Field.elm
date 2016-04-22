@@ -33,6 +33,7 @@ type alias Field =
 fieldIsValid : Field -> Bool
 fieldIsValid field =
   case field.validator field.value of
+    -- "An empty error list means the subject was valid"
     [] ->
       True
 

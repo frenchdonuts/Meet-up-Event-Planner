@@ -1,6 +1,7 @@
 module Components.CreateEventForm (..) where
 
 import List exposing (..)
+import Date exposing (fromString, toTime)
 import Regex
 import Html exposing (..)
 import Html.Attributes as A exposing (..)
@@ -33,6 +34,8 @@ type alias Model =
   , startTime : Field
   , endTime : Field
   , optMsg : String
+  , startTimeLTendTimeValidator : Validator String ( Field, Field )
+  , errMsgs : List String
   }
 
 
@@ -43,7 +46,23 @@ type alias Event =
 init : Model
 init =
   let
-    name' = validatedField "Event Name: " "text" (ifBlank "Please give this event a name.")
+    name' =
+      validatedField "Event Name: " "text" (ifBlank "Please give this event a name.")
+
+    errPredicate ( start, end ) =
+      let
+        startTime =
+          Result.map Date.toTime (Date.fromString start.value)
+
+        endTime =
+          Result.map Date.toTime (Date.fromString end.value)
+      in
+        case (Result.map2 (>) startTime endTime) of
+          Ok bool ->
+            bool
+
+          Err _ ->
+            False
   in
     { name =
         { name' | autofocus = True }
@@ -58,6 +77,9 @@ init =
     , endTime =
         validatedField "End Time: " "datetime-local" (timeValidator "When will it end?")
     , optMsg = ""
+    , startTimeLTendTimeValidator =
+        ifInvalid errPredicate "An event must start before it ends! Hint: Either push the start time earlier or the end time later."
+    , errMsgs = []
     }
 
 
@@ -78,6 +100,7 @@ isComplete model =
     && fieldIsValid model.location
     && fieldIsValid model.startTime
     && fieldIsValid model.endTime
+    && List.isEmpty model.errMsgs
 
 
 
@@ -110,10 +133,24 @@ update action model =
       { model | location = F.update a model.location }
 
     UpdateStartTimeInput a ->
-      { model | startTime = F.update a model.startTime }
+      let
+        updatedStartTime =
+          F.update a model.startTime
+      in
+        { model
+          | startTime = Debug.log ("Start Time: " ++ updatedStartTime.value) updatedStartTime
+          , errMsgs = model.startTimeLTendTimeValidator ( updatedStartTime, model.endTime )
+        }
 
     UpdateEndTimeInput a ->
-      { model | endTime = F.update a model.endTime }
+      let
+        updatedEndTime =
+          F.update a model.endTime
+      in
+        { model
+          | endTime = updatedEndTime
+          , errMsgs = model.startTimeLTendTimeValidator ( model.startTime, updatedEndTime )
+        }
 
     UpdateOptMsgInput msg ->
       { model | optMsg = msg }
@@ -155,6 +192,7 @@ view dispatcher model =
       , div
           [ class "row" ]
           [ textarea_ dispatcher model.optMsg ]
+      , ul [ style [ ( "color", "#F44336" ) ] ] (List.map (\errMsg -> li [] [ text errMsg ]) model.errMsgs)
       ]
 
 

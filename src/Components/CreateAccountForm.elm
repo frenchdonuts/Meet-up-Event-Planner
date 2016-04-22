@@ -35,7 +35,7 @@ init : Model
 init =
   let name' = validatedField "Name: " "text" (ifBlank "What's your name?")
   in
-    { name = { name' | autofocus = True } 
+    { name = { name' | autofocus = True }
     , emailAddress = validatedField "Email: " "text" (ifInvalidEmail "Please put in a valid email.")
     , password = validatedField "Password: " "password" ifInvalidPassword
     , bio = Bio.init
@@ -47,6 +47,9 @@ ifInvalidPassword =
   let
     hasPattern pattern err =
       ifInvalid (\str -> not <| Regex.contains (Regex.regex pattern) str) err
+
+    hasSymbols' =
+      hasPattern "\\!|\\@|\\#|\\$|\\%|\\^|\\&|\\*"
 
     hasSymbols =
       hasPattern "\\!|\\@|\\#|\\$|\\%|\\^|\\&|\\*" "Password must contain at least one of these symbols: !, @, #, $, %, ^, &, *"
