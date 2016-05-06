@@ -179,7 +179,7 @@ view dispatcher model =
 
     header =
       fnOfPage
-        (text "Hi! Tell me a little bit about yourself!")
+        (text "Hi! Let's get you registered first.")
         (text "I'll need some information about your event...")
         (text "Who's invited?")
         (text "Please review your information.")
@@ -211,32 +211,36 @@ view dispatcher model =
     nextBtnType =
       fnOfPage "button" "button" "button" "submit" "button"
   in
-    -- Html.form [ autocomplete True ]
-    Html.form
-      [ class "container", autocomplete True ]
-      [ -- Header
-        div
-          [ class "row" ]
-          [ h3 [] [ header model.pages.current ] ]
-        -- Main content
-      , curPage model.pages.current
-        -- Buttons
-      , div
-          [ class "row" ]
-          [ button
-              [ type' (nextBtnType model.pages.current)
-              , class "waves-effect waves-light btn col s2"
-              , style (prevBtnStyle model.pages.current)
-              , onClick dispatcher PrevPage
+    div
+      []
+      [ nav [ class "top-nav" ] [ div [ class "nav-wrapper" ] [] ]
+        -- Html.form [ autocomplete True ]
+      , Html.form
+          [ class "container", autocomplete True ]
+          [ -- Header
+            div
+              [ class "row" ]
+              [ h3 [] [ header model.pages.current ] ]
+            -- Main content
+          , curPage model.pages.current
+            -- Buttons
+          , div
+              [ class "row" ]
+              [ button
+                  [ type' (nextBtnType model.pages.current)
+                  , class "waves-effect waves-light btn col s2"
+                  , style (prevBtnStyle model.pages.current)
+                  , onClick dispatcher PrevPage
+                  ]
+                  [ text "Prev" ]
+              , button
+                  [ type' "button"
+                  , class "waves-effect waves-light btn col s2 offset-s8"
+                  , style (nextBtnStyle model.pages.current)
+                  , onClick dispatcher NextPage
+                  ]
+                  [ text (nextBtnText model.pages.current) ]
               ]
-              [ text "Prev" ]
-          , button
-              [ type' "button"
-              , class "waves-effect waves-light btn col s2 offset-s8"
-              , style (nextBtnStyle model.pages.current)
-              , onClick dispatcher NextPage
-              ]
-              [ text (nextBtnText model.pages.current) ]
           ]
       ]
 

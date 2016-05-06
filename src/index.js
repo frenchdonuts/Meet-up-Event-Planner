@@ -1,5 +1,5 @@
 var Elm = require('./Main');
-var meetupPlanner = Elm.embed(Elm.Main, document.getElementById('main'), {
+var meetupPlanner = Elm.fullscreen(Elm.Main, {
     swap: false
 });
 

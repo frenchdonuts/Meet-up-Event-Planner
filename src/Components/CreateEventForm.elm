@@ -49,17 +49,18 @@ init =
     name' =
       validatedField "Event Name: " "text" (ifBlank "Please give this event a name.")
 
-    errPredicate ( start, end ) =
+    errPredicate ( startTimeField, endTimeField ) =
       let
         startTime =
-          Result.map Date.toTime (Date.fromString start.value)
+          -- Result data type - also known as Either in other languages
+          Result.map Date.toTime (Date.fromString startTimeField.value)
 
         endTime =
-          Result.map Date.toTime (Date.fromString end.value)
+          Result.map Date.toTime (Date.fromString endTimeField.value)
       in
         case (Result.map2 (>) startTime endTime) of
-          Ok bool ->
-            bool
+          Ok isStartTimeGreaterThanEndTime ->
+            isStartTimeGreaterThanEndTime
 
           Err _ ->
             False
