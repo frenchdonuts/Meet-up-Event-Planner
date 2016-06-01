@@ -1,9 +1,9 @@
 {
-  "name": "elm-webpack-starter",
-  "description": "A Webpack build setup for writing Elm apps",
-  "version": "0.4.1",
+  "name": "Meetup Event Planner",
+  "description": "1st project for Udacity's Senior Web Developer Nanodegree.",
+  "version": "0.0.1",
   "license": "MIT",
-  "author": "Peter Morawiec",
+  "author": "Jonathan Tan",
   "private": true,
   "scripts": {
     "start": "webpack-dev-server --hot --host 0.0.0.0 --inline --content-base src/",
