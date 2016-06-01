@@ -74,7 +74,7 @@ init =
     , location =
         validatedField "Location: " "text" (ifBlank "Where is the event going to be held?")
     , startTime =
-        validatedField "Start Time: " "datetime-local" (timeValidator "When is it goin to start?")
+        validatedField "Start Time: " "datetime-local" (timeValidator "When will it start?")
     , endTime =
         validatedField "End Time: " "datetime-local" (timeValidator "When will it end?")
     , optMsg = ""
