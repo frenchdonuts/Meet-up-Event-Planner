@@ -1,10 +1,12 @@
-module Components.CreateAccountForm (..) where
+module Components.CreateAccountForm exposing (..)
 
 import String
 import Regex
 import Html exposing (..)
+import Html.App exposing (map)
 import Html.Attributes as A exposing (..)
 import Html.Events exposing (..)
+import List as L
 import Components.Field as F exposing (..)
 import Components.FormInput as FI exposing (..)
 import Components.BioForm as Bio exposing (..)
@@ -118,25 +120,26 @@ update action model =
 -- VIEW
 
 
-view : Signal.Address Action -> Model -> Html
-view dispatcher model =
-  let
-    contramapWith =
-      Signal.forwardTo dispatcher
-  in
+view : Model -> Html Action
+view model =
     div
       [ class "row" ]
       [ div
           [ class "row" ]
-          [ F.view (contramapWith UpdateNameInput) model.name
-          , F.view (contramapWith UpdateEmailAddressInput) model.emailAddress
+          [ map UpdateNameInput (F.view model.name),
+          --F.view (contramapWith UpdateNameInput) model.name
+          --, F.view (contramapWith UpdateEmailAddressInput) model.emailAddress
+            map UpdateEmailAddressInput (F.view model.emailAddress)
           ]
       , div [ class "row" ] []
       , div [ class "row" ] []
       , div
           [ class "row" ]
-          (F.bigValidatedFieldView (contramapWith UpdatePasswordInput) model.password)
+          (L.map (\v -> map UpdatePasswordInput v) (F.bigValidatedFieldView model.password))
+          --(map UpdatePasswordInput (F.bigValidatedFieldView model.password))
+          --(F.bigValidatedFieldView (contramapWith UpdatePasswordInput) model.password)
       , div [ class "row" ] []
       , div [ class "row" ] []
-      , Bio.view (contramapWith UpdateBioForm) model.bio
+      , map UpdateBioForm (Bio.view model.bio)
+      --, Bio.view (contramapWith UpdateBioForm) model.bio
       ]

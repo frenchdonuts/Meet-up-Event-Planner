@@ -1,7 +1,7 @@
 -- From https://gist.github.com/TheSeamau5/25aede445f2942234588
 
 
-module Components.SelectionList (..) where
+module Components.SelectionList exposing (..) 
 
 -- Selection List --
 -- A selection list is a non-empty list that is aware

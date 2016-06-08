@@ -1,4 +1,4 @@
-module Components.GuestList (..) where
+module Components.GuestList exposing (..)
 
 import String exposing (..)
 import List exposing (..)
@@ -75,55 +75,36 @@ update action model =
 -- "Oh no! No one's invited yet!", "At least you'll have some company." "They do say 3s a crowd..."
 
 
-view : Signal.Address Action -> Model -> Html
-view dispatcher model =
-  let
-    contramapWith =
-      Signal.forwardTo dispatcher
-  in
+view : Model -> Html Action
+view model =
     div
       [ class "row" ]
-      [ list dispatcher model
-      ]
+      [ list model ]
 
 
-list : Signal.Address Action -> Model -> Html
-list dispatcher model =
-  let
-    contramapWith =
-      Signal.forwardTo dispatcher
-  in
+list : Model -> Html Action
+list model =
     ul
       [ class "collection with-header" ]
       <| [ li
             [ class "collection-header", style [ ( "margin-top", "20px" ) ] ]
             [ div
                 [ class "row" ]
-                [ addGuestInput dispatcher model.addGuestInput
-                , addBtn (contramapWith AddGuest) model.addGuestInput
+                [ addGuestInput model.addGuestInput
+                , addBtn model.addGuestInput
                 ]
               --, h4 [] [ text "Guests" ]
             ]
          ]
-      ++ (List.map (\guest -> guestItem dispatcher guest) model.guests)
+      ++ (List.map (\guest -> guestItem guest) model.guests)
 
 
-addGuestInput : Signal.Address Action -> String -> Html
-addGuestInput dispatcher model =
+addGuestInput : String -> Html Action
+addGuestInput model =
   let
-    contramapWithSetAddGuestInput =
-      Signal.forwardTo dispatcher SetAddGuestInput
-
-    emitOnEnterKey str keycode =
-      -- Cuz 'return' apparently has a keycode of 13
-      if keycode == 13 then
-        AddGuest str
-      else
-        AddGuest ""
-
     is13 code =
       if code == 13 then
-        Ok ()
+        Ok (AddGuest model)
       else
         Err "wrong key code"
   in
@@ -133,14 +114,13 @@ addGuestInput dispatcher model =
           [ id "add-guest-input"
           , class "focus-field"
           , type' "text"
-          , on "input" targetValue (\str -> Signal.message dispatcher (SetAddGuestInput str))
+          , onInput SetAddGuestInput
             -- Allow User to add guest by pressing ENTER
           , onWithOptions
               "keypress"
               -- preventDefault since we are inside a <form>
               { stopPropagation = True, preventDefault = True }
               (Json.customDecoder keyCode is13)
-              (\_ -> Signal.message dispatcher (AddGuest model))
           , value model
           , placeholder ""
           ]
@@ -149,18 +129,18 @@ addGuestInput dispatcher model =
       ]
 
 
-addBtn : Signal.Address String -> String -> Html
-addBtn dispatcher guest =
+addBtn : String -> Html Action
+addBtn guest =
   button
     [ type' "button"
     , class "waves-effect waves-light btn col s2"
-    , onClick dispatcher guest
+    , onClick (AddGuest guest)
     ]
     [ text "Add" ]
 
 
-guestItem : Signal.Address Action -> ( ID, String ) -> Html
-guestItem dispatcher ( id, name ) =
+guestItem : ( ID, String ) -> Html Action
+guestItem ( id, name ) =
   li
     [ class "collection-item row" ]
     [ div
@@ -170,7 +150,7 @@ guestItem dispatcher ( id, name ) =
             [ class "secondary-content" ]
             [ i
                 [ class "material-icons"
-                , onClick dispatcher (RemoveGuest id)
+                , onClick (RemoveGuest id)
                 ]
                 [ text "close" ]
             ]

@@ -1,13 +1,11 @@
 var Elm = require('./Main');
-var meetupPlanner = Elm.fullscreen(Elm.Main, {
-    swap: false
-});
+var meetupPlanner = Elm.Main.fullscreen();
 
 // Autofocus when Page changes
-meetupPlanner.ports.focus.subscribe(function(unused) {
+meetupPlanner.ports.focusOnFirstInputAboveFold.subscribe(function(unused) {
     setTimeout(function() {
 
-        var firstElement = document.getElementById('main').querySelector('.focus-field');
+        var firstElement = document.querySelector('.focus-field');
 
         if (firstElement) {
 

@@ -2,12 +2,11 @@
 --  and modified
 
 
-module Components.Field (..) where
+module Components.Field exposing (..)
 
 import Html as H exposing (..)
 import Html.Attributes as A exposing (..)
 import Html.Events as E exposing (..)
-import Signal exposing (Address)
 import Validate exposing (..)
 import String exposing (join)
 
@@ -109,6 +108,7 @@ containerClass field =
 type Action
   = SetValue String
   | Validate
+  | NoOp
 
 
 
@@ -124,13 +124,16 @@ update action field =
     Validate ->
       { field | errors = field.validator field.value }
 
+    NoOp ->
+      field
+
 
 
 -- The view function for fields
 
 
-view : Address Action -> Field -> Html
-view address field =
+view : Field -> Html Action
+view field =
   let
     -- Your CSS here
     containerStyle =
@@ -138,14 +141,13 @@ view address field =
   in
     H.div
       [ class "input-field col s6" ]
-      --(containerClass field) ]
       [ H.input
           [ id (field.label ++ "-field")
           , class (inputClass field)
           , type' field.type'
           , value field.value
-          , onInput address SetValue
-          , onBlur address Validate
+          , onInput SetValue
+          , onBlur Validate
           , autocomplete True
           , autofocus field.autofocus
           , placeholder ""
@@ -159,18 +161,44 @@ view address field =
           [ text field.label ]
       ]
 
+view' : Field -> List (Attribute Action) -> Html Action
+view' field attrs =
+  let
+    -- Your CSS here
+    containerStyle =
+      []
+  in
+    H.div
+      [ class "input-field" ]
+      [ H.input
+          ([ id (field.label ++ "-field")
+           , class (inputClass field)
+           , type' field.type'
+           , value field.value
+           , onInput SetValue
+           , onBlur Validate
+           , autocomplete True
+           , autofocus field.autofocus
+           , placeholder ""
+           ] ++ attrs)
+          []
+      , label
+          [ for (field.label ++ "-field")
+          , attribute "data-error" (join "\n" field.errors)
+          , class "active"
+          , style [ ("margin-left", "-10.5px" )]
+          ]
+          [ text field.label ]
+      ]
 
-
--- Use this view when you have too many validation error msgs
-
-
-bigValidatedFieldView : Address Action -> Field -> List Html
-bigValidatedFieldView address field =
+{-| Use this view when must display many validation error msgs.
+-}
+bigValidatedFieldView : Field -> List (Html Action)
+bigValidatedFieldView field =
   let
     errors =
       List.map (\errStr -> li [] [ text errStr ]) field.errors
 
-    --      join "\n" field.errors
     divErrorStyle =
       [ ( "color", "#F44336" ) ]
   in
@@ -181,8 +209,8 @@ bigValidatedFieldView address field =
             , class (inputClass field)
             , type' field.type'
             , value field.value
-            , onInput address SetValue
-            , onBlur address Validate
+            , onInput SetValue
+            , onBlur Validate
             , autocomplete True
             , placeholder ""
             ]
@@ -193,7 +221,7 @@ bigValidatedFieldView address field =
             ]
             [ text field.label ]
         ]
-      -- Display validation errors in this div
+      -- Div where we display validation errors
     , H.ul
         [ class "col s6"
         , style divErrorStyle
@@ -202,20 +230,13 @@ bigValidatedFieldView address field =
     ]
 
 
-onInput : Address a -> (String -> a) -> Attribute
-onInput address constructor =
-  E.on "input" E.targetValue (constructor >> Signal.message address)
-
-
-
 -- Non-editable input
 
 
-disabledView : Field -> Html
+disabledView : Field -> Html Action
 disabledView field =
   H.div
     [ class "input-field col s6" ]
-    --(containerClass field) ]
     [ H.input
         [ id (field.label ++ "-field")
         , disabled True

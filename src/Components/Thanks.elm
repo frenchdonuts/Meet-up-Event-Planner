@@ -1,10 +1,11 @@
-module Components.Thanks (..) where
+module Components.Thanks exposing (..)
 
 import Html as H exposing (..)
 import Html.Attributes as A exposing (..)
 
+type Msg = NoOp
 
-view : Html
+view : Html Msg
 view =
   div
     [ A.class "valign-wrapper" ]

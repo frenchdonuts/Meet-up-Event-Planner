@@ -1,17 +1,24 @@
-module Components.Summary (..) where
+module Components.Summary exposing (..)
 
 import Html as H exposing (..)
+import Html.App exposing (map)
 import Html.Attributes as A exposing (..)
 import Html.Events as E exposing (..)
 import Components.CreateEventForm as CEF exposing (..)
 import Components.GuestList as GL exposing (..)
 
+type Action
+  = UpdateCreateEventForm CEF.Action
+  | UpdateGuestList GL.Action
 
-view : Signal.Address CEF.Action -> CEF.Model -> Signal.Address GL.Action -> GL.Model -> Html
-view cefDispatcher cefModel glDispatcher glModel =
+
+view : CEF.Model -> GL.Model -> Html Action
+view cefModel glModel =
   div
     [ class "row" ]
-    [ CEF.view cefDispatcher cefModel
+    [ map UpdateCreateEventForm (CEF.view cefModel)
+    --CEF.view cefDispatcher cefModel
     , div [ class "row" ] []
-    , GL.view glDispatcher glModel
+    , map UpdateGuestList (GL.view glModel)
+    --, GL.view glDispatcher glModel
     ]

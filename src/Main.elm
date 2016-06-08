@@ -1,17 +1,16 @@
-module Main (..) where
+port module Main exposing (..)
 
 import Debug
 import Html exposing (..)
+import Html.App as Html
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Task exposing (Task)
-import Effects exposing (Effects)
 
 
 -- official 'Elm Architecture' package
 -- https://github.com/evancz/start-app
 
-import StartApp
 import Components.SelectionList exposing (..)
 import Components.CreateEventForm as CEF exposing (..)
 import Components.GuestList as GL exposing (..)
@@ -21,54 +20,14 @@ import Components.Thanks as T exposing (..)
 
 
 -- APP KICK OFF!
-
-
-app =
-  StartApp.start
-    { init = init
-    , update = update
-    , view = view
-    , inputs = []
-    }
-
-
 main =
-  app.html
+  Html.program
+    { init = init, update = update, view = view, subscriptions = \_ -> Sub.none }
 
 
 
--- Tasks
-
-
-port tasks : Signal (Task.Task Effects.Never ())
-port tasks =
-  app.tasks
-
-
-
--- HOT-SWAPPING
-
-
-port swap : Signal.Signal Bool
-
-
-
--- Maintaining focus on first element above the fold
-
-
-pageChanges :
-  { address : Signal.Address String
-  , signal : Signal String
-  }
-pageChanges =
-  Signal.mailbox ""
-
-
-port focus : Signal.Signal String
-port focus =
-  pageChanges.signal
-    |> Signal.map (\str -> str)
-
+-- Ports
+port focusOnFirstInputAboveFold : String -> Cmd msg
 
 
 -- MODEL
@@ -93,17 +52,37 @@ type alias Model =
 
 -- INIT
 
+pages =
+  { previous = [ CreateAccountForm ]
+  , current = CreateEventForm
+  , next = [ GuestList, Summary, Thanks ]
+  }
+
+--pages = newSelectionList CreateAccountForm [ CreateEventForm, GuestList, Summary, Thanks ]
 
 pureInit =
   { createEventForm = CEF.init
   , guestList = GL.init
   , createAccountForm = CAF.init
-  , pages = newSelectionList CreateAccountForm [ CreateEventForm, GuestList, Summary, Thanks ]
+  , pages = pages
   }
 
 
+init : (Model, Cmd Action)
 init =
-  ( pureInit, Effects.none )
+  let
+    -- : (CEF.Model, Cmd CEF.Action)
+    (cefModel, cefCmds) =
+      CEF.init
+  in
+    ({ createEventForm = cefModel
+     , guestList = GL.init
+     , createAccountForm = CAF.init
+     , pages = pages
+     }
+     , Cmd.batch
+        [ Cmd.map UpdateCreateEventForm cefCmds ]
+     )
 
 
 
@@ -119,34 +98,33 @@ type Action
   | PrevPage
 
 
+update : Action -> Model -> (Model, Cmd Action)
 update action model =
   case action of
     NoOp ->
-      ( model, Effects.none )
+      ( model, Cmd.none )
 
     UpdateCreateEventForm a ->
-      ( { model | createEventForm = CEF.update a model.createEventForm }, Effects.none )
+      let
+        (cefModel, cefCmd) =
+          CEF.update a model.createEventForm
+      in
+        ( { model | createEventForm = cefModel }, Cmd.map UpdateCreateEventForm cefCmd )
 
     UpdateGuestList a ->
-      ( { model | guestList = GL.update a model.guestList }, Effects.none )
+      ( { model | guestList = GL.update a model.guestList }, Cmd.none )
 
     UpdateCreateAccountForm a ->
-      ( { model | createAccountForm = CAF.update a model.createAccountForm }, Effects.none )
+      ( { model | createAccountForm = CAF.update a model.createAccountForm }, Cmd.none )
 
     NextPage ->
       if curPageIsValid model.pages.current model then
-        ( { model | pages = forward model.pages }, focusFirstElementTask )
+        ( { model | pages = forward model.pages }, focusOnFirstInputAboveFold "" )
       else
-        ( model, Effects.none )
+        ( model, Cmd.none )
 
     PrevPage ->
-      ( { model | pages = back model.pages }, focusFirstElementTask )
-
-
-focusFirstElementTask =
-  Signal.send pageChanges.address ""
-    `Task.andThen` (\_ -> (Task.succeed NoOp))
-    |> Effects.task
+      ( { model | pages = back model.pages }, focusOnFirstInputAboveFold "" )
 
 
 curPageIsValid : Page -> Model -> Bool
@@ -172,11 +150,8 @@ curPageIsValid page model =
 -- VIEW
 
 
-view dispatcher model =
+view model =
   let
-    forwardWith =
-      Signal.forwardTo dispatcher
-
     header =
       fnOfPage
         (text "Hi! Let's get you registered first.")
@@ -187,11 +162,20 @@ view dispatcher model =
 
     curPage =
       fnOfPage
-        (CAF.view (forwardWith UpdateCreateAccountForm) model.createAccountForm)
-        (CEF.view (forwardWith UpdateCreateEventForm) model.createEventForm)
-        (GL.view (forwardWith UpdateGuestList) model.guestList)
-        (S.view (forwardWith UpdateCreateEventForm) model.createEventForm (forwardWith UpdateGuestList) model.guestList)
-        T.view
+        (Html.map UpdateCreateAccountForm (CAF.view model.createAccountForm))
+        --(CAF.view (forwardWith UpdateCreateAccountForm) model.createAccountForm)
+        (Html.map UpdateCreateEventForm (CEF.view model.createEventForm))
+        --(CEF.view (forwardWith UpdateCreateEventForm) model.createEventForm)
+        (Html.map UpdateGuestList (GL.view model.guestList))
+        --(GL.view (forwardWith UpdateGuestList) model.guestList)
+        (Html.map toMainAction (S.view model.createEventForm model.guestList))
+        --(S.view (forwardWith UpdateCreateEventForm) model.createEventForm (forwardWith UpdateGuestList) model.guestList)
+        (Html.map (\_ -> NoOp) T.view)
+
+    toMainAction summaryAction =
+      case summaryAction of
+        S.UpdateCreateEventForm a -> UpdateCreateEventForm a
+        S.UpdateGuestList a -> UpdateGuestList a
 
     visible =
       [ ( "visibility", "visible" ) ]
@@ -230,14 +214,14 @@ view dispatcher model =
                   [ type' (nextBtnType model.pages.current)
                   , class "waves-effect waves-light btn col s2"
                   , style (prevBtnStyle model.pages.current)
-                  , onClick dispatcher PrevPage
+                  , onClick PrevPage
                   ]
                   [ text "Prev" ]
               , button
                   [ type' "button"
                   , class "waves-effect waves-light btn col s2 offset-s8"
                   , style (nextBtnStyle model.pages.current)
-                  , onClick dispatcher NextPage
+                  , onClick NextPage
                   ]
                   [ text (nextBtnText model.pages.current) ]
               ]

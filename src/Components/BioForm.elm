@@ -1,7 +1,8 @@
-module Components.BioForm (..) where
+module Components.BioForm exposing (..)
 
 import Regex
 import Html exposing (..)
+import Html.App exposing (map)
 import Html.Attributes as A exposing (..)
 import Components.Field as F exposing (..)
 import Validate exposing (..)
@@ -62,20 +63,24 @@ update action model =
 -- VIEW
 
 
-view : Signal.Address Action -> Model -> Html
-view dispatcher model =
-  let
-    contramapWith =
-      Signal.forwardTo dispatcher
-  in
+view : Model -> Html Action
+view model =
+--  let
+--    contramapWith =
+--      Signal.forwardTo dispatcher
+--  in
     div
       []
       [ div
           [ class "row" ]
-          [ F.view (contramapWith SetEmployer) model.employer
-          , F.view (contramapWith SetJobTitle) model.jobTitle
+          [ map SetEmployer (F.view model.employer)
+          --, F.view (contramapWith SetEmployer) model.employer
+          , map SetJobTitle (F.view model.jobTitle)
+          --, F.view (contramapWith SetJobTitle) model.jobTitle
           ]
       , div
           [ class "row" ]
-          [ F.view (contramapWith SetBirthday) model.birthday ]
+          [ map SetBirthday (F.view model.birthday)
+          -- F.view (contramapWith SetBirthday) model.birthday
+          ]
       ]
