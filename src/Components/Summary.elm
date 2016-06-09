@@ -17,8 +17,6 @@ view cefModel glModel =
   div
     [ class "row" ]
     [ map UpdateCreateEventForm (CEF.view cefModel)
-    --CEF.view cefDispatcher cefModel
     , div [ class "row" ] []
     , map UpdateGuestList (GL.view glModel)
-    --, GL.view glDispatcher glModel
     ]

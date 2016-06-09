@@ -6,6 +6,8 @@ import Html.App as Html
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Task exposing (Task)
+import List as L
+import Focus exposing (..)
 
 
 -- official 'Elm Architecture' package
@@ -16,6 +18,7 @@ import Components.CreateEventForm as CEF exposing (..)
 import Components.GuestList as GL exposing (..)
 import Components.CreateAccountForm as CAF exposing (..)
 import Components.Summary as S exposing (..)
+import Components.CreatedEventsPage as CEP exposing (..)
 
 
 -- APP KICK OFF!
@@ -37,19 +40,81 @@ type Page
   | CreateEventForm
   | GuestList
   | Summary
+  | EventsCreated
 
+fnOfPage : a -> a -> a -> a -> a -> Page -> a
+fnOfPage onCreateAccountForm onCreateEventForm onGuestList onSummary onEventsCreated page =
+  case page of
+    CreateAccountForm ->
+      onCreateAccountForm
+
+    CreateEventForm ->
+      onCreateEventForm
+
+    GuestList ->
+      onGuestList
+
+    Summary ->
+      onSummary
+
+    EventsCreated ->
+      onEventsCreated
 
 type alias Model =
-  { createEventForm : CEF.Model
-  , guestList : GL.Model
-  , createAccountForm : CAF.Model
+  { createAccountForm : CAF.Model
+  , curEventCreationFlow : EventCreationFlow
+  , createdEventsPage : CEP.Model
   , pages : SelectionList Page
   , onEventsCreatedPage : Bool
   }
 
+type alias EventCreationFlow =
+  { createEventForm : CEF.Model
+  , guestList : GL.Model
+  }
+
+-- FOCI
+
+createEventForm : Focus { r | createEventForm : a } a
+createEventForm =
+  create .createEventForm (\f r -> { r | createEventForm = f r.createEventForm })
+
+guestList : Focus { r | guestList : a } a
+guestList =
+  create .guestList (\f r -> { r | guestList = f r.guestList })
+
+curEventCreationFlow : Focus { r | curEventCreationFlow : a } a
+curEventCreationFlow =
+  create .curEventCreationFlow (\f r -> { r | curEventCreationFlow = f r.curEventCreationFlow })
 
 
 -- INIT
+init : (Model, Cmd Action)
+init =
+  let
+    (eventCreationFlowModel, eventCreationFlowCmd) =
+      newEventCreationFlow
+  in
+    ({ curEventCreationFlow = eventCreationFlowModel
+     , createdEventsPage = CEP.init
+     , createAccountForm = CAF.init
+     , pages = pages
+     , onEventsCreatedPage = False
+     }
+     , Cmd.batch
+        [ eventCreationFlowCmd ]
+     )
+
+newEventCreationFlow =
+  let
+    (cefModel, cefCmd) = CEF.init
+  in
+    ({ createEventForm = cefModel
+     , guestList = GL.init
+     }
+    , Cmd.batch
+        [ Cmd.map UpdateCreateEventForm cefCmd ]
+    )
 
 pages =
   { previous = [ CreateAccountForm ]
@@ -58,23 +123,6 @@ pages =
   }
 
 --pages = newSelectionList CreateAccountForm [ CreateEventForm, GuestList, Summary, Thanks ]
-
-init : (Model, Cmd Action)
-init =
-  let
-    -- : (CEF.Model, Cmd CEF.Action)
-    (cefModel, cefCmds) =
-      CEF.init
-  in
-    ({ createEventForm = cefModel
-     , guestList = GL.init
-     , createAccountForm = CAF.init
-     , pages = pages
-     , onEventsCreatedPage = False
-     }
-     , Cmd.batch
-        [ Cmd.map UpdateCreateEventForm cefCmds ]
-     )
 
 
 
@@ -86,8 +134,12 @@ type Action
   | UpdateCreateEventForm CEF.Action
   | UpdateGuestList GL.Action
   | UpdateCreateAccountForm CAF.Action
+  | UpdateCreatedEventsPage CEP.Msg
   | NextPage
   | PrevPage
+  | FinishEventCreation EventCreationFlow
+  | NavigateToEventsCreatedPage
+  | NavigateToMainPage
 
 
 update : Action -> Model -> (Model, Cmd Action)
@@ -99,15 +151,29 @@ update action model =
     UpdateCreateEventForm a ->
       let
         (cefModel, cefCmd) =
-          CEF.update a model.createEventForm
+          CEF.update a model.curEventCreationFlow.createEventForm
       in
-        ( { model | createEventForm = cefModel }, Cmd.map UpdateCreateEventForm cefCmd )
+        ( set (curEventCreationFlow => createEventForm) cefModel model
+        , Cmd.map UpdateCreateEventForm cefCmd )
 
     UpdateGuestList a ->
-      ( { model | guestList = GL.update a model.guestList }, Cmd.none )
+      let
+        newGLModel = GL.update a model.curEventCreationFlow.guestList
+      in
+        ( set (curEventCreationFlow => guestList) newGLModel model
+        , Cmd.none )
 
     UpdateCreateAccountForm a ->
-      ( { model | createAccountForm = CAF.update a model.createAccountForm }, Cmd.none )
+      ( { model
+        | createAccountForm = CAF.update a model.createAccountForm
+        }
+      , Cmd.none )
+
+    UpdateCreatedEventsPage m ->
+      ( { model
+        | createdEventsPage = CEP.update m model.createdEventsPage
+        }
+      , Cmd.none)
 
     NextPage ->
       if curPageIsValid model.pages.current model then
@@ -118,6 +184,24 @@ update action model =
     PrevPage ->
       ( { model | pages = back model.pages }, focusOnFirstInputAboveFold "" )
 
+    FinishEventCreation eventCreationFlow ->
+      ( { model
+        | createdEventsPage = CEP.update (AddEventCreationFlow eventCreationFlow) model.createdEventsPage
+        }
+      , Cmd.none )
+
+    NavigateToEventsCreatedPage ->
+      ( { model
+        | onEventsCreatedPage = True
+        }
+      , Cmd.none )
+
+    NavigateToMainPage ->
+      ( { model
+        | onEventsCreatedPage = False
+        }
+      , Cmd.none )
+
 
 curPageIsValid : Page -> Model -> Bool
 curPageIsValid page model =
@@ -126,19 +210,22 @@ curPageIsValid page model =
       CAF.isComplete model.createAccountForm
 
     CreateEventForm ->
-      CEF.isComplete model.createEventForm
+      CEF.isComplete model.curEventCreationFlow.createEventForm
 
     GuestList ->
       True
 
     Summary ->
-      CEF.isComplete model.createEventForm
+      CEF.isComplete model.curEventCreationFlow.createEventForm
+
+    EventsCreated ->
+      True
 
 
 
 -- VIEW
 
-
+view : Model -> Html Action
 view model =
   let
     header =
@@ -147,13 +234,15 @@ view model =
         (text "I'll need some information about your event...")
         (text "Who's invited?")
         (text "Please review your information.")
+        (text "All Events Created")
 
     curPage =
       fnOfPage
         (Html.map UpdateCreateAccountForm (CAF.view model.createAccountForm))
-        (Html.map UpdateCreateEventForm (CEF.view model.createEventForm))
-        (Html.map UpdateGuestList (GL.view model.guestList))
-        (Html.map toMainAction (S.view model.createEventForm model.guestList))
+        (Html.map UpdateCreateEventForm (CEF.view model.curEventCreationFlow.createEventForm))
+        (Html.map UpdateGuestList (GL.view model.curEventCreationFlow.guestList))
+        (Html.map toMainAction (S.view model.curEventCreationFlow.createEventForm model.curEventCreationFlow.guestList))
+        (Html.map UpdateCreatedEventsPage (CEP.view model.createdEventsPage))
 
     toMainAction summaryAction =
       case summaryAction of
@@ -167,20 +256,42 @@ view model =
       [ ( "visibility", "hidden" ) ]
 
     prevBtnStyle =
-      fnOfPage hidden visible visible visible
+      fnOfPage hidden visible visible visible hidden
 
     nextBtnStyle =
-      fnOfPage visible visible visible visible
+      fnOfPage visible visible visible visible hidden
 
     nextBtnText =
-      fnOfPage "Next" "Next" "Next" "Finish"
+      fnOfPage "Next" "Next" "Next" "Finish" ""
 
     nextBtnType =
-      fnOfPage "button" "button" "button" "submit"
+      fnOfPage "button" "button" "button" "submit" "button"
+
+    navItem txt msg =
+      li [ onClick msg ] [ text txt ]
+
+    mainContent =
+      if model.onEventsCreatedPage then
+        curPage EventsCreated
+      else
+        curPage model.pages.current
   in
     div
       []
-      [ nav [ class "top-nav" ] [ div [ class "nav-wrapper" ] [] ]
+      [ nav
+          [ class "top-nav" ]
+          [ div
+              [ class "nav-wrapper" ]
+              [ ul
+                  [ class "left"]
+                  (L.map
+                    (\(txt, msg) -> navItem txt msg)
+                    [ ("Main Page", NavigateToMainPage)
+                    , ("Events Created", NavigateToEventsCreatedPage)
+                    ]
+                  )
+              ]
+          ]
         -- Html.form [ autocomplete True ]
       , Html.form
           [ class "container", autocomplete True ]
@@ -189,7 +300,7 @@ view model =
               [ class "row" ]
               [ h3 [] [ header model.pages.current ] ]
             -- Main content
-          , curPage model.pages.current
+          , mainContent
             -- Buttons
           , div
               [ class "row" ]
@@ -210,19 +321,3 @@ view model =
               ]
           ]
       ]
-
-
-fnOfPage : a -> a -> a -> a -> Page -> a
-fnOfPage onCreateAccountForm onCreateEventForm onGuestList onSummary page =
-  case page of
-    CreateAccountForm ->
-      onCreateAccountForm
-
-    CreateEventForm ->
-      onCreateEventForm
-
-    GuestList ->
-      onGuestList
-
-    Summary ->
-      onSummary
