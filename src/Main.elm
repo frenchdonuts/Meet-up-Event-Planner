@@ -16,7 +16,6 @@ import Components.CreateEventForm as CEF exposing (..)
 import Components.GuestList as GL exposing (..)
 import Components.CreateAccountForm as CAF exposing (..)
 import Components.Summary as S exposing (..)
-import Components.Thanks as T exposing (..)
 
 
 -- APP KICK OFF!
@@ -38,7 +37,6 @@ type Page
   | CreateEventForm
   | GuestList
   | Summary
-  | Thanks
 
 
 type alias Model =
@@ -46,6 +44,7 @@ type alias Model =
   , guestList : GL.Model
   , createAccountForm : CAF.Model
   , pages : SelectionList Page
+  , onEventsCreatedPage : Bool
   }
 
 
@@ -55,18 +54,10 @@ type alias Model =
 pages =
   { previous = [ CreateAccountForm ]
   , current = CreateEventForm
-  , next = [ GuestList, Summary, Thanks ]
+  , next = [ GuestList, Summary ]
   }
 
 --pages = newSelectionList CreateAccountForm [ CreateEventForm, GuestList, Summary, Thanks ]
-
-pureInit =
-  { createEventForm = CEF.init
-  , guestList = GL.init
-  , createAccountForm = CAF.init
-  , pages = pages
-  }
-
 
 init : (Model, Cmd Action)
 init =
@@ -79,6 +70,7 @@ init =
      , guestList = GL.init
      , createAccountForm = CAF.init
      , pages = pages
+     , onEventsCreatedPage = False
      }
      , Cmd.batch
         [ Cmd.map UpdateCreateEventForm cefCmds ]
@@ -142,9 +134,6 @@ curPageIsValid page model =
     Summary ->
       CEF.isComplete model.createEventForm
 
-    Thanks ->
-      True
-
 
 
 -- VIEW
@@ -158,19 +147,13 @@ view model =
         (text "I'll need some information about your event...")
         (text "Who's invited?")
         (text "Please review your information.")
-        (text "")
 
     curPage =
       fnOfPage
         (Html.map UpdateCreateAccountForm (CAF.view model.createAccountForm))
-        --(CAF.view (forwardWith UpdateCreateAccountForm) model.createAccountForm)
         (Html.map UpdateCreateEventForm (CEF.view model.createEventForm))
-        --(CEF.view (forwardWith UpdateCreateEventForm) model.createEventForm)
         (Html.map UpdateGuestList (GL.view model.guestList))
-        --(GL.view (forwardWith UpdateGuestList) model.guestList)
         (Html.map toMainAction (S.view model.createEventForm model.guestList))
-        --(S.view (forwardWith UpdateCreateEventForm) model.createEventForm (forwardWith UpdateGuestList) model.guestList)
-        (Html.map (\_ -> NoOp) T.view)
 
     toMainAction summaryAction =
       case summaryAction of
@@ -184,16 +167,16 @@ view model =
       [ ( "visibility", "hidden" ) ]
 
     prevBtnStyle =
-      fnOfPage hidden visible visible visible hidden
+      fnOfPage hidden visible visible visible
 
     nextBtnStyle =
-      fnOfPage visible visible visible visible hidden
+      fnOfPage visible visible visible visible
 
     nextBtnText =
-      fnOfPage "Next" "Next" "Next" "Finish" ""
+      fnOfPage "Next" "Next" "Next" "Finish"
 
     nextBtnType =
-      fnOfPage "button" "button" "button" "submit" "button"
+      fnOfPage "button" "button" "button" "submit"
   in
     div
       []
@@ -229,8 +212,8 @@ view model =
       ]
 
 
-fnOfPage : a -> a -> a -> a -> a -> Page -> a
-fnOfPage onCreateAccountForm onCreateEventForm onGuestList onSummary onThanks page =
+fnOfPage : a -> a -> a -> a -> Page -> a
+fnOfPage onCreateAccountForm onCreateEventForm onGuestList onSummary page =
   case page of
     CreateAccountForm ->
       onCreateAccountForm
@@ -243,6 +226,3 @@ fnOfPage onCreateAccountForm onCreateEventForm onGuestList onSummary onThanks pa
 
     Summary ->
       onSummary
-
-    Thanks ->
-      onThanks

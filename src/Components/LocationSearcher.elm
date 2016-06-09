@@ -78,9 +78,11 @@ type Msg
   | FetchLocationSucceed Location
   | FetchLocationFail Error
   | HideMenu
+  | ShowMenu
   | OnArrowUp
   | OnArrowDown
   | OnVenueItemHover Int
+  | SelectVenue
 
 timeToSettle =
   300 * Time.millisecond
@@ -89,23 +91,33 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     UpdateSearchField fieldAction ->
-      let
-        newCount =
-          model.sleepCount + 1
-        searchField =
-          F.update fieldAction model.searchField
-        menuVisible =
-          not (String.isEmpty searchField.value)
-      in
-        ( { model
-          | searchField = searchField
-          , userInput = searchField.value
-          , sleepCount = newCount
-          , menuVisible = menuVisible
-          }
-        -- Debounce
-        , Process.sleep timeToSettle |> Task.perform never (always (Timeout newCount))
-        )
+      case fieldAction of
+        F.SetValue _ ->
+          let
+            newCount =
+              model.sleepCount + 1
+            searchField =
+              F.update fieldAction model.searchField
+            menuVisible =
+              not (String.isEmpty searchField.value)
+          in
+            ( { model
+              | searchField = searchField
+              , userInput = searchField.value
+              , sleepCount = newCount
+              , menuVisible = menuVisible
+              }
+            -- Debounce
+            , Process.sleep timeToSettle |> Task.perform never (always (Timeout newCount))
+            )
+
+        F.OnBlur ->
+          ( { model | menuVisible = False }, Cmd.none )
+
+        F.OnFocus ->
+          ( { model | menuVisible = True }, Cmd.none )
+
+        _ -> ( { model | searchField = F.update fieldAction model.searchField }, Cmd.none )
 
     Timeout count ->
       if count == model.sleepCount then
@@ -139,13 +151,24 @@ update msg model =
 
     HideMenu ->
       Debug.log "Hiding menu..." ( { model | menuVisible = False }, Cmd.none )
+    ShowMenu ->
+      let
+        menuVisible =
+          L.isEmpty model.venueItems
+      in
+        ( {model | menuVisible = menuVisible }, Cmd.none)
 
     OnArrowUp ->
       let
         activeVenueItem' =
           Basics.max (model.activeVenueItem - 1) -1
+        model' =
+          setVenueItemActive activeVenueItem' model
       in
-        ( setVenueItemActive activeVenueItem' model, Cmd.none )
+        ( { model'
+          | menuVisible = True
+          }
+        , Cmd.none )
 
     OnArrowDown ->
       let
@@ -154,14 +177,22 @@ update msg model =
             -1
           else
             model.activeVenueItem + 1
+        model' =
+          setVenueItemActive activeVenueItem' model
       in
-        ( setVenueItemActive activeVenueItem' model, Cmd.none )
+        ( { model'
+          | menuVisible = True
+          }
+        , Cmd.none )
 
     OnVenueItemHover i ->
       let
         activeVenueItem' = i
       in
         ( setVenueItemActive activeVenueItem' model, Cmd.none )
+
+    SelectVenue ->
+        ( { model | menuVisible = False }, Cmd.none )
 
 setVenueItemActive : Int -> Model -> Model
 setVenueItemActive activeVenueItem' model =
@@ -269,7 +300,7 @@ view model =
     options =
       { preventDefault = True, stopPropagation = False }
 
-    dec =
+    keyDownDecoder =
       (J.customDecoder
         keyCode
         (\code ->
@@ -277,6 +308,8 @@ view model =
               Ok OnArrowUp
             else if code == 40 then
               Ok OnArrowDown
+            else if code == 13 then
+              Ok SelectVenue
             else
               Err "not handling that key"
         )
@@ -285,9 +318,10 @@ view model =
     div
       [ class "col s6"
       , style menuStyles
-      , onFocus FetchVenues
+      -- Why won't these work!?!
+      , onFocus ShowMenu
       , onBlur HideMenu
-      , onWithOptions "keydown" options dec
+      , onWithOptions "keydown" options keyDownDecoder
       ]
       [ viewInput model.searchField --map UpdateSearchField (F.view' model.searchField [])
       , searchResultsView model.menuVisible model.venueItems model.searchField.value
@@ -295,26 +329,7 @@ view model =
 
 viewInput : F.Field -> Html Msg
 viewInput searchField =
-  let
-    options =
-      { preventDefault = True, stopPropagation = False }
-
-    dec =
-      (J.customDecoder
-        keyCode
-        (\code ->
-            if code == 38 then
-              Ok OnArrowUp
-            else if code == 40 then
-              Ok OnArrowDown
-            else
-              Err "not handling that key"
-        )
-      )
-    attrs =
-      []-- onWithOptions "keydown" options dec ]
-  in
-    map UpdateSearchField (F.view' searchField attrs)
+    map UpdateSearchField (F.viewNoGrid searchField)
 
 searchResultsView : Bool -> List VenueItem -> String -> Html Msg
 searchResultsView menuVisible venueItems searchField =

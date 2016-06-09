@@ -102,11 +102,18 @@ list model =
 addGuestInput : String -> Html Action
 addGuestInput model =
   let
-    is13 code =
-      if code == 13 then
-        Ok (AddGuest model)
-      else
-        Err "wrong key code"
+    options =
+      { stopPropagation = True, preventDefault = True }
+    keyDownDecoder =
+      (Json.customDecoder
+        keyCode
+        (\code ->
+            if code == 13 then
+              Ok (AddGuest model)
+            else
+              Err "wrong key code"
+        )
+      )
   in
     div
       [ class "input-field col s6 offset-s2" ]
@@ -116,11 +123,7 @@ addGuestInput model =
           , type' "text"
           , onInput SetAddGuestInput
             -- Allow User to add guest by pressing ENTER
-          , onWithOptions
-              "keypress"
-              -- preventDefault since we are inside a <form>
-              { stopPropagation = True, preventDefault = True }
-              (Json.customDecoder keyCode is13)
+          , onWithOptions "keypress" options keyDownDecoder
           , value model
           , placeholder ""
           ]

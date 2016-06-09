@@ -108,7 +108,8 @@ containerClass field =
 type Action
   = SetValue String
   | Validate
-  | NoOp
+  | OnBlur
+  | OnFocus
 
 
 
@@ -124,7 +125,10 @@ update action field =
     Validate ->
       { field | errors = field.validator field.value }
 
-    NoOp ->
+    OnBlur ->
+      update Validate field
+
+    OnFocus ->
       field
 
 
@@ -147,7 +151,7 @@ view field =
           , type' field.type'
           , value field.value
           , onInput SetValue
-          , onBlur Validate
+          , onBlur OnBlur
           , autocomplete True
           , autofocus field.autofocus
           , placeholder ""
@@ -161,8 +165,8 @@ view field =
           [ text field.label ]
       ]
 
-view' : Field -> List (Attribute Action) -> Html Action
-view' field attrs =
+viewNoGrid : Field -> Html Action
+viewNoGrid field =
   let
     -- Your CSS here
     containerStyle =
@@ -171,16 +175,17 @@ view' field attrs =
     H.div
       [ class "input-field" ]
       [ H.input
-          ([ id (field.label ++ "-field")
-           , class (inputClass field)
-           , type' field.type'
-           , value field.value
-           , onInput SetValue
-           , onBlur Validate
-           , autocomplete True
-           , autofocus field.autofocus
-           , placeholder ""
-           ] ++ attrs)
+          [ id (field.label ++ "-field")
+          , class (inputClass field)
+          , type' field.type'
+          , value field.value
+          , onInput SetValue
+          , onBlur OnBlur
+          , onFocus OnFocus
+          , autocomplete True
+          , autofocus field.autofocus
+          , placeholder ""
+          ]
           []
       , label
           [ for (field.label ++ "-field")
