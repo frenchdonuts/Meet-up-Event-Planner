@@ -44,9 +44,15 @@ update msg model =
 -- VIEW
 view : Model -> Html Msg
 view model =
-  ul
-    [ class "collection" ]
-    ( L.map (\flow -> itemView flow) model.completedEventCreationFlows )
+  let
+    hide =
+      L.isEmpty model.completedEventCreationFlows
+  in
+    ul
+      [ class "collection"
+      , hidden hide
+      ]
+      ( L.map (\flow -> itemView flow) model.completedEventCreationFlows )
 
 itemView : EventCreationFlow -> Html Msg
 itemView eventCreationFlow =

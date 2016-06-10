@@ -265,7 +265,7 @@ view model =
       fnOfPage "Next" "Next" "Next" "Finish" ""
 
     nextBtnType =
-      fnOfPage "button" "button" "button" "submit" "button"
+      fnOfPage "button" "button" "button" "submit" ""
 
     navItem txt msg =
       li [ onClick msg ] [ text txt ]
@@ -292,7 +292,6 @@ view model =
                   )
               ]
           ]
-        -- Html.form [ autocomplete True ]
       , Html.form
           [ class "container", autocomplete True ]
           [ -- Header
@@ -305,14 +304,14 @@ view model =
           , div
               [ class "row" ]
               [ button
-                  [ type' (nextBtnType model.pages.current)
+                  [ type' "button"
                   , class "waves-effect waves-light btn col s2"
                   , style (prevBtnStyle model.pages.current)
                   , onClick PrevPage
                   ]
                   [ text "Prev" ]
               , button
-                  [ type' "button"
+                  [ type' (nextBtnType model.pages.current)
                   , class "waves-effect waves-light btn col s2 offset-s8"
                   , style (nextBtnStyle model.pages.current)
                   , onClick NextPage
