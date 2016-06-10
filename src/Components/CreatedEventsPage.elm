@@ -48,10 +48,8 @@ view model =
     hide =
       L.isEmpty model.completedEventCreationFlows
   in
-    ul
-      [ class "collection"
-      , hidden hide
-      ]
+    div
+      [ hidden hide ]
       ( L.map (\flow -> itemView flow) model.completedEventCreationFlows )
 
 itemView : EventCreationFlow -> Html Msg
@@ -59,6 +57,11 @@ itemView eventCreationFlow =
   let
     { createEventForm, guestList } = eventCreationFlow
   in
-    li
-      [ class "collection-item" ]
-      [ map NoOp (S.view createEventForm guestList) ]
+    div
+      []
+      [ map NoOp (S.view createEventForm guestList)
+      , hr [ style [ ("border-top", "1px dashed #8c8b8b") ] ] []
+      -- Extra padding between events.
+      , div [ class "row" ] []
+      , div [ class "row" ] []
+      ]

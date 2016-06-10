@@ -10,10 +10,9 @@ import List as L
 import Focus exposing (..)
 
 
--- official 'Elm Architecture' package
--- https://github.com/evancz/start-app
 
-import Components.SelectionList exposing (..)
+import Components.TwoSelectionListNavigator exposing (..)
+import Components.SelectionList as SL
 import Components.CreateEventForm as CEF exposing (..)
 import Components.GuestList as GL exposing (..)
 import Components.CreateAccountForm as CAF exposing (..)
@@ -64,8 +63,7 @@ type alias Model =
   { createAccountForm : CAF.Model
   , curEventCreationFlow : EventCreationFlow
   , createdEventsPage : CEP.Model
-  , pages : SelectionList Page
-  , onEventsCreatedPage : Bool
+  , pages : TwoSelectionListNavigator Page
   }
 
 type alias EventCreationFlow =
@@ -98,8 +96,7 @@ init =
     ({ curEventCreationFlow = eventCreationFlowModel
      , createdEventsPage = CEP.init
      , createAccountForm = CAF.init
-     , pages = pages
-     , onEventsCreatedPage = False
+     , pages = newNavigator flow1 flow2
      }
      , Cmd.batch
         [ eventCreationFlowCmd ]
@@ -116,13 +113,13 @@ newEventCreationFlow =
         [ Cmd.map UpdateCreateEventForm cefCmd ]
     )
 
-pages =
-  { previous = [ CreateAccountForm ]
-  , current = CreateEventForm
-  , next = [ GuestList, Summary ]
-  }
+flow1 = SL.newSelectionList
+          CreateAccountForm
+          [ CreateEventForm, GuestList, Summary ]
 
---pages = newSelectionList CreateAccountForm [ CreateEventForm, GuestList, Summary, Thanks ]
+flow2 = SL.newSelectionList
+          EventsCreated
+          []
 
 
 
@@ -138,8 +135,7 @@ type Action
   | NextPage
   | PrevPage
   | FinishEventCreation EventCreationFlow
-  | NavigateToEventsCreatedPage
-  | NavigateToMainPage
+  | NavigateToOtherFlow
 
 
 update : Action -> Model -> (Model, Cmd Action)
@@ -176,7 +172,7 @@ update action model =
       , Cmd.none)
 
     NextPage ->
-      if curPageIsValid model.pages.current model then
+      if curPageIsValid (current model.pages) model then
         ( { model | pages = forward model.pages }, focusOnFirstInputAboveFold "" )
       else
         ( model, Cmd.none )
@@ -190,15 +186,9 @@ update action model =
         }
       , Cmd.none )
 
-    NavigateToEventsCreatedPage ->
+    NavigateToOtherFlow ->
       ( { model
-        | onEventsCreatedPage = True
-        }
-      , Cmd.none )
-
-    NavigateToMainPage ->
-      ( { model
-        | onEventsCreatedPage = False
+        | pages = toggle model.pages
         }
       , Cmd.none )
 
@@ -236,7 +226,7 @@ view model =
         (text "Please review your information.")
         (text "All Events Created")
 
-    curPage =
+    curPageView =
       fnOfPage
         (Html.map UpdateCreateAccountForm (CAF.view model.createAccountForm))
         (Html.map UpdateCreateEventForm (CEF.view model.curEventCreationFlow.createEventForm))
@@ -264,17 +254,24 @@ view model =
     nextBtnText =
       fnOfPage "Next" "Next" "Next" "Finish" ""
 
-    nextBtnType =
-      fnOfPage "button" "button" "button" "submit" ""
+    nextBtnMsg =
+      fnOfPage NextPage NextPage NextPage (FinishEventCreation model.curEventCreationFlow) NoOp
 
-    navItem txt msg =
-      li [ onClick msg ] [ text txt ]
+    navItem txt isEventsCreated =
+      let
+        navItemClass =
+          case (current model.pages) of
+            EventsCreated -> if isEventsCreated then "active" else ""
+            _ -> if (not isEventsCreated) then "active" else ""
+      in
+        li
+          [ class navItemClass
+          , onClick NavigateToOtherFlow
+          ]
+          [ a [] [ text txt ] ]
 
-    mainContent =
-      if model.onEventsCreatedPage then
-        curPage EventsCreated
-      else
-        curPage model.pages.current
+    currentPage =
+      current model.pages
   in
     div
       []
@@ -285,9 +282,9 @@ view model =
               [ ul
                   [ class "left"]
                   (L.map
-                    (\(txt, msg) -> navItem txt msg)
-                    [ ("Main Page", NavigateToMainPage)
-                    , ("Events Created", NavigateToEventsCreatedPage)
+                    (\(txt, isEventsCreated) -> navItem txt isEventsCreated)
+                    [ ("Create Events", False)
+                    , ("Events Created", True)
                     ]
                   )
               ]
@@ -297,26 +294,26 @@ view model =
           [ -- Header
             div
               [ class "row" ]
-              [ h3 [] [ header model.pages.current ] ]
+              [ h3 [] [ header currentPage ] ]
             -- Main content
-          , mainContent
+          , curPageView currentPage
             -- Buttons
           , div
               [ class "row" ]
               [ button
                   [ type' "button"
                   , class "waves-effect waves-light btn col s2"
-                  , style (prevBtnStyle model.pages.current)
+                  , style (prevBtnStyle currentPage)
                   , onClick PrevPage
                   ]
                   [ text "Prev" ]
               , button
-                  [ type' (nextBtnType model.pages.current)
+                  [ type' "button"
                   , class "waves-effect waves-light btn col s2 offset-s8"
-                  , style (nextBtnStyle model.pages.current)
-                  , onClick NextPage
+                  , style (nextBtnStyle currentPage)
+                  , onClick (nextBtnMsg currentPage)
                   ]
-                  [ text (nextBtnText model.pages.current) ]
+                  [ text (nextBtnText currentPage) ]
               ]
           ]
       ]
