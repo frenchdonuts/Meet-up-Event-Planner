@@ -369,6 +369,7 @@ venueItemView venueItem =
       [ class class'
       , style viewStyle
       , onMouseOver (OnVenueItemHover venueItem.index)
+      , onClick SelectVenue
       ]
       [ div
           []

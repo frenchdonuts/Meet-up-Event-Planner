@@ -16,21 +16,8 @@ import Validate exposing (..)
 import Components.LocationSearcher as LS exposing (..)
 
 
-{-
 
-Name of the event
-Type of the event (birthday party, conference talk, wedding, etc.)
-Event host (could be an individual’s name or an organization)
-Event start date and time
-Event end date and time
-Guest list
-Location
-Optional message to the guests with additional information about the event
-
--}
 -- MODEL
-
-
 type alias Model =
   { name : Field
   , type' : Field

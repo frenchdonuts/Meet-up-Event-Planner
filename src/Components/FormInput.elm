@@ -158,9 +158,7 @@ view context model =
            , type' inputType
            , value value'
            , onInput SetValue
-           --, on "input" targetValue (\str -> Signal.message dispatcher (SetValue str))
            , onBlur (Validate validator)
-           --, validateWith validator
            , autocomplete True
            , placeholder ""
            ]
@@ -173,8 +171,3 @@ view context model =
           ]
           [ text label' ]
       ]
-
-
-validate : Validator Err Value -> Attribute Action
-validate validator =
-  onBlur (Validate validator)

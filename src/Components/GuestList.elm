@@ -6,7 +6,6 @@ import Html exposing (..)
 import Html.Attributes as A exposing (..)
 import Html.Events as E exposing (..)
 import Json.Decode as Json
-import Components.FormInput as F exposing (..)
 
 
 -- MODEL
