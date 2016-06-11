@@ -35,7 +35,7 @@ init : (Model, Cmd Action)
 init =
   let
     name' =
-      validatedField "Event Name: " "text" (ifBlank "Please give this event a name.")
+      validatedField "What do you want to call this event?" "text" (ifBlank "Required")
 
     errPredicate ( startTimeField, endTimeField ) =
       let
@@ -57,14 +57,14 @@ init =
     ( { name =
         { name' | autofocus = True }
     , type' =
-        validatedField "Event Type: " "text" (ifBlank "What kind of event is it?")
+        validatedField "What type of event is it?" "text" (ifBlank "Required")
     , host =
-        validatedField "Event Host: " "text" (ifBlank "Who's the host?")
+        validatedField "Who's hosting this event?" "text" (ifBlank "Required")
     , location = lsModel
     , startTime =
-        validatedField "Start Time: " "datetime-local" (timeValidator "When will it start?")
+        validatedField "When does it start?" "datetime-local" (timeValidator "Required")
     , endTime =
-        validatedField "End Time: " "datetime-local" (timeValidator "When will it end?")
+        validatedField "When does it end?" "datetime-local" (timeValidator "Required")
     , optMsg = ""
     , startTimeLTendTimeValidator =
         ifInvalid errPredicate "An event must start before it ends! Hint: Either push the start time earlier or the end time later."
@@ -156,29 +156,19 @@ view : Model -> Html Action
 view model =
     div
       [ class "row" ]
-      [ div
-          [ class "row" ]
-          [ map UpdateNameInput (F.view model.name)
-          , map UpdateTypeInput (F.view model.type')
-          ]
+      [ map UpdateNameInput (F.view model.name)
+      , map UpdateTypeInput (F.view model.type')
       , div [ class "row" ] []
       , div [ class "row" ] []
-      , div [ class "row" ]
-            [ map UpdateHostInput (F.view model.host)
-            , map UpdateLocationInput (LS.view model.location)
-            ]
+      , map UpdateHostInput (F.view model.host)
+      , map UpdateLocationInput (LS.view model.location)
       , div [ class "row" ] []
       , div [ class "row" ] []
-      , div
-          [ class "row" ]
-          [ map UpdateStartTimeInput (F.view model.startTime)
-          , map UpdateEndTimeInput (F.view model.endTime)
-          ]
+      , map UpdateStartTimeInput (F.view model.startTime)
+      , map UpdateEndTimeInput (F.view model.endTime)
       , div [ class "row" ] []
       , div [ class "row" ] []
-      , div
-          [ class "row" ]
-          [ textarea_ model.optMsg ]
+      , textarea_ model.optMsg
       , ul [ style [ ( "color", "#F44336" ) ] ] (List.map (\errMsg -> li [] [ text errMsg ]) model.errMsgs)
       ]
 

@@ -112,7 +112,7 @@ newEventCreationFlow =
     , Cmd.batch
         [ Cmd.map UpdateCreateEventForm cefCmd ]
     )
-    
+
 flow1 = SL.newSelectionList
           CreateAccountForm
           [ CreateEventForm, GuestList, Summary ]

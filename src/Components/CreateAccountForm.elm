@@ -37,7 +37,7 @@ init : Model
 init =
   let
     name' =
-      validatedField "What's your name?" "text" (ifBlank "We need a name.")
+      validatedField "What's your name?" "text" (ifBlank "Required")
   in
     { name = { name' | autofocus = True }
     , emailAddress = validatedField "What's your email?" "text" (ifInvalidEmail "Please put in a valid email.")

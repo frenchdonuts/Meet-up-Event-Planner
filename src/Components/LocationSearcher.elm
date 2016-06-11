@@ -16,9 +16,6 @@ import Geolocation exposing (..)
 import Debug
 import String
 import Array
---  Ugh...I can't use elm-autocomplete b/c their input doesn't have a label...
---import Autocomplete
---import Autocomplete.Styling as Styling
 
 
 -- MODEL
@@ -51,7 +48,7 @@ type alias Venue =
 
 init : (Model, Cmd Msg)
 init =
-  ({ searchField = F.validatedField "Location: " "text" (ifBlank "Where is the event going to be held?")
+  ({ searchField = F.validatedField "Where will this event be located?" "text" (ifBlank "Required")
    , sleepCount = 0
    , venueItems = []
    , activeVenueItem = -1
@@ -74,6 +71,7 @@ type Msg
   | FetchVenues
   | FetchVenuesSucceed (List Venue)
   | FetchVenuesFail Http.Error
+  -- To generalize, make this: Timeout (Dict Msg Int)
   | Timeout Int
   | FetchLocationSucceed Location
   | FetchLocationFail Error
@@ -89,110 +87,125 @@ timeToSettle =
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
-  case msg of
-    UpdateSearchField fieldAction ->
-      case fieldAction of
-        F.SetValue _ ->
-          let
-            newCount =
-              model.sleepCount + 1
-            searchField =
-              F.update fieldAction model.searchField
-            menuVisible =
-              not (String.isEmpty searchField.value)
-          in
-            ( { model
-              | searchField = searchField
-              , userInput = searchField.value
-              , sleepCount = newCount
-              , menuVisible = menuVisible
-              }
-            -- Debounce
-            , Process.sleep timeToSettle |> Task.perform never (always (Timeout newCount))
-            )
+  let
+    debounceSearchFieldSetValue newCount =
+      Process.sleep (300 * Time.millisecond ) |> Task.perform never (always (Timeout newCount))
+  in
+    case msg of
+      UpdateSearchField fieldAction ->
+        let
+          updatedSearchField =
+            F.update fieldAction model.searchField
+        in
+          case fieldAction of
 
-        F.OnBlur ->
-          ( { model | menuVisible = False }, Cmd.none )
+            F.SetValue _ ->
+              let
+                newCount =
+                  model.sleepCount + 1
+                menuVisible =
+                  not (String.isEmpty updatedSearchField.value)
+              in
+                ( { model
+                  | searchField = updatedSearchField
+                  , userInput = updatedSearchField.value
+                  , sleepCount = newCount
+                  , menuVisible = menuVisible
+                  }
+                , debounceSearchFieldSetValue newCount
+                )
 
-        F.OnFocus ->
-          ( { model | menuVisible = True }, Cmd.none )
+            F.OnBlur ->
+              ( { model
+                | menuVisible = False
+                , searchField = updatedSearchField
+                }
+              , Cmd.none )
 
-        _ -> ( { model | searchField = F.update fieldAction model.searchField }, Cmd.none )
+            F.OnFocus ->
+              ( { model
+                | menuVisible = True
+                , searchField = updatedSearchField
+                }
+              , Cmd.none )
 
-    Timeout count ->
-      if count == model.sleepCount then
-        update FetchVenues { model | sleepCount = 0 }
-      else
+            _ -> ( { model | searchField = updatedSearchField }, Cmd.none )
+
+      -- Execute any debounced Msgs
+      Timeout count ->
+        if count == model.sleepCount then
+          update FetchVenues { model | sleepCount = 0 }
+        else
+          ( model, Cmd.none )
+
+      FetchVenues ->
+        Debug.log "Fetching venues" ( model, searchHostLocation model.searchField.value model.location )
+
+      FetchVenuesSucceed venues ->
+        let
+          menuVisible =
+            not (L.isEmpty venues)
+        in
+          ( { model
+            | venueItems = List.indexedMap (\i v -> venueItem i v) venues
+            , menuVisible = menuVisible
+            , activeVenueItem = -1
+            }
+          , Cmd.none )
+
+      FetchVenuesFail error ->
         ( model, Cmd.none )
 
-    FetchVenues ->
-      Debug.log "Fetching venues" ( model, searchHostLocation model.searchField.value model.location )
+      FetchLocationSucceed location ->
+        ( { model | location = Just location }, Cmd.none )
 
-    FetchVenuesSucceed venues ->
-      let
-        menuVisible =
-          not (L.isEmpty venues)
-      in
-        ( { model
-          | venueItems = List.indexedMap (\i v -> venueItem i v) venues
-          , menuVisible = menuVisible
-          , activeVenueItem = -1
-          }
-        , Cmd.none )
+      FetchLocationFail error ->
+        ( { model | location = Nothing }, Cmd.none )
 
-    FetchVenuesFail error ->
-      ( model, Cmd.none )
+      HideMenu ->
+        Debug.log "Hiding menu..." ( { model | menuVisible = False }, Cmd.none )
+      ShowMenu ->
+        let
+          menuVisible =
+            L.isEmpty model.venueItems
+        in
+          ( {model | menuVisible = menuVisible }, Cmd.none)
 
-    FetchLocationSucceed location ->
-      ( { model | location = Just location }, Cmd.none )
+      OnArrowUp ->
+        let
+          activeVenueItem' =
+            Basics.max (model.activeVenueItem - 1) -1
+          model' =
+            setVenueItemActive activeVenueItem' model
+        in
+          ( { model'
+            | menuVisible = True
+            }
+          , Cmd.none )
 
-    FetchLocationFail error ->
-      ( { model | location = Nothing }, Cmd.none )
+      OnArrowDown ->
+        let
+          activeVenueItem' =
+            if (model.activeVenueItem > (L.length model.venueItems) - 1) then
+              -1
+            else
+              model.activeVenueItem + 1
+          model' =
+            setVenueItemActive activeVenueItem' model
+        in
+          ( { model'
+            | menuVisible = True
+            }
+          , Cmd.none )
 
-    HideMenu ->
-      Debug.log "Hiding menu..." ( { model | menuVisible = False }, Cmd.none )
-    ShowMenu ->
-      let
-        menuVisible =
-          L.isEmpty model.venueItems
-      in
-        ( {model | menuVisible = menuVisible }, Cmd.none)
+      OnVenueItemHover i ->
+        let
+          activeVenueItem' = i
+        in
+          ( setVenueItemActive activeVenueItem' model, Cmd.none )
 
-    OnArrowUp ->
-      let
-        activeVenueItem' =
-          Basics.max (model.activeVenueItem - 1) -1
-        model' =
-          setVenueItemActive activeVenueItem' model
-      in
-        ( { model'
-          | menuVisible = True
-          }
-        , Cmd.none )
-
-    OnArrowDown ->
-      let
-        activeVenueItem' =
-          if (model.activeVenueItem > (L.length model.venueItems) - 1) then
-            -1
-          else
-            model.activeVenueItem + 1
-        model' =
-          setVenueItemActive activeVenueItem' model
-      in
-        ( { model'
-          | menuVisible = True
-          }
-        , Cmd.none )
-
-    OnVenueItemHover i ->
-      let
-        activeVenueItem' = i
-      in
-        ( setVenueItemActive activeVenueItem' model, Cmd.none )
-
-    SelectVenue ->
-        ( { model | menuVisible = False }, Cmd.none )
+      SelectVenue ->
+          ( { model | menuVisible = False }, Cmd.none )
 
 setVenueItemActive : Int -> Model -> Model
 setVenueItemActive activeVenueItem' model =
@@ -317,13 +330,9 @@ view model =
   in
     div
       [ class "col s12 m6"
-      , style menuStyles
-      -- Why won't these work!?!
-      , onFocus ShowMenu
-      , onBlur HideMenu
       , onWithOptions "keydown" options keyDownDecoder
       ]
-      [ viewInput model.searchField --map UpdateSearchField (F.view' model.searchField [])
+      [ viewInput model.searchField
       , searchResultsView model.menuVisible model.venueItems model.searchField.value
       ]
 
