@@ -96,9 +96,9 @@ inputClass field =
 containerClass : Field -> String
 containerClass field =
   if field.type' == "datetime-local" then
-    "col s6"
+    "col m6"
   else
-    "input-field col s6"
+    "input-field col m6"
 
 
 
@@ -144,7 +144,7 @@ view field =
       []
   in
     H.div
-      [ class "input-field col s6" ]
+      [ class "input-field col m6" ]
       [ H.input
           [ id (field.label ++ "-field")
           , class (inputClass field)
@@ -208,7 +208,7 @@ bigValidatedFieldView field =
       [ ( "color", "#F44336" ) ]
   in
     [ H.div
-        [ class "input-field col s6" ]
+        [ class "input-field col m6" ]
         [ H.input
             [ id (field.label ++ "-field")
             , class (inputClass field)
@@ -228,7 +228,7 @@ bigValidatedFieldView field =
         ]
       -- Div where we display validation errors
     , H.ul
-        [ class "col s6"
+        [ class "col m6"
         , style divErrorStyle
         ]
         errors
@@ -241,7 +241,7 @@ bigValidatedFieldView field =
 disabledView : Field -> Html Action
 disabledView field =
   H.div
-    [ class "input-field col s6" ]
+    [ class "input-field col m6" ]
     [ H.input
         [ id (field.label ++ "-field")
         , disabled True

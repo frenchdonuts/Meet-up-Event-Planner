@@ -112,10 +112,14 @@ newEventCreationFlow =
     , Cmd.batch
         [ Cmd.map UpdateCreateEventForm cefCmd ]
     )
-
+{-
 flow1 = SL.newSelectionList
           CreateAccountForm
           [ CreateEventForm, GuestList, Summary ]
+-}
+flow1 = SL.newSelectionList
+        GuestList
+        []
 
 flow2 = SL.newSelectionList
           EventsCreated
@@ -203,7 +207,7 @@ curPageIsValid page model =
       CEF.isComplete model.curEventCreationFlow.createEventForm
 
     GuestList ->
-      True
+      GL.isComplete model.curEventCreationFlow.guestList
 
     Summary ->
       CEF.isComplete model.curEventCreationFlow.createEventForm

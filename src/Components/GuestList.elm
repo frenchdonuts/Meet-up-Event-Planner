@@ -3,9 +3,12 @@ module Components.GuestList exposing (..)
 import String exposing (..)
 import List exposing (..)
 import Html exposing (..)
+import Html.App exposing (map)
 import Html.Attributes as A exposing (..)
 import Html.Events as E exposing (..)
 import Json.Decode as Json
+import Validate exposing (..)
+import Components.Field as F exposing (..)
 
 
 -- MODEL
@@ -15,6 +18,9 @@ type alias Model =
   { guests : List ( ID, String )
   , addGuestInput : String
   , nextId : ID
+  , maxCapacity : Field
+  , guestsLTmaxCapacityValidator : Validator String ( List (ID, String), Field )
+  , errMsgs : List String
   }
 
 
@@ -24,11 +30,42 @@ type alias ID =
 
 init : Model
 init =
-  { guests = []
-  , addGuestInput = ""
-  , nextId = 0
-  }
+  let
+    maxCapacityValidator =
+      ifInvalid
+        (\str ->
+            case String.toInt str of
+              Ok capacity -> if capacity > 0 then False else True
+              Err _ -> True
+        )
+        "Max capacity must be a valid integer greater than 0!"
+    errPredicate ( guests, field ) =
+      let
+        numOfGuests =
+          Ok <| List.length guests
+        maxCapacity =
+          String.toInt field.value
+      in
+        case Result.map2 (>) numOfGuests maxCapacity of
+          Ok isNumOfGuestsGTmaxCapacity ->
+            isNumOfGuestsGTmaxCapacity
+          Err _ ->
+            False
+  in
+    { guests = []
+    , addGuestInput = ""
+    , nextId = 0
+    , maxCapacity =
+        validatedField "How many people can come?" "text" maxCapacityValidator
+    , guestsLTmaxCapacityValidator =
+        ifInvalid errPredicate "Too many guests! Hint: Either uninvite some people or increase the capacity."
+    , errMsgs = []
+    }
 
+isComplete : Model -> Bool
+isComplete model =
+  fieldIsValid model.maxCapacity
+    && List.isEmpty model.errMsgs
 
 
 -- UPDATE
@@ -38,6 +75,7 @@ type Action
   = SetAddGuestInput String
   | AddGuest String
   | RemoveGuest Int
+  | UpdateMaxCapacityField F.Action
 
 
 update : Action -> Model -> Model
@@ -47,33 +85,39 @@ update action model =
       { model | addGuestInput = guest }
 
     AddGuest guestName ->
-      -- Make sure we don't add a guest with no name
-      if not (String.isEmpty guestName) then
+      let
+        guests =
+          -- Make sure we don't add a guest with no name
+          if not (String.isEmpty guestName) then
+            model.guests ++ [ ( model.nextId, guestName ) ]
+          else
+            model.guests
+      in
         { model
-          | guests = model.guests ++ [ ( model.nextId, guestName ) ]
+          | guests = guests
           , addGuestInput = ""
           , nextId = model.nextId + 1
+          , errMsgs = model.guestsLTmaxCapacityValidator ( guests, model.maxCapacity )
         }
-      else
-        model
 
     RemoveGuest i ->
       let
         pred ( id, guestName ) =
           not <| i == id
+        guests =
+          List.filter pred model.guests
       in
         { model
-          | guests = List.filter pred model.guests
+          | guests = guests
+          , errMsgs = model.guestsLTmaxCapacityValidator ( guests, model.maxCapacity )
         }
+
+    UpdateMaxCapacityField a ->
+      { model | maxCapacity = F.update a model.maxCapacity }
 
 
 
 -- VIEW
--- Alternative headers:
--- "Okay. Who's invited?"
--- "Oh no! No one's invited yet!", "At least you'll have some company." "They do say 3s a crowd..."
-
-
 view : Model -> Html Action
 view model =
     div
@@ -91,12 +135,24 @@ list model =
                 [ class "row" ]
                 [ addGuestInput model.addGuestInput
                 , addBtn model.addGuestInput
+                , div
+                    [ class "col m4 push-m1" ]
+                    [ Html.App.map UpdateMaxCapacityField (F.viewNoGrid model.maxCapacity) ]
                 ]
-              --, h4 [] [ text "Guests" ]
+            , div
+                [ class "row" ]
+                [ errView model.errMsgs ]
             ]
          ]
       ++ (List.map (\guest -> guestItem guest) model.guests)
 
+errView : List String -> Html Action
+errView errMsgs =
+  div
+    [ class "col m8 offset-m1"
+    , style [ ("color", "#F44336") ]
+    ]
+    (List.map (\msg -> text msg) errMsgs)
 
 addGuestInput : String -> Html Action
 addGuestInput model =
@@ -115,7 +171,7 @@ addGuestInput model =
       )
   in
     div
-      [ class "input-field col s6 offset-s2" ]
+      [ class "input-field col m4 offset-m1" ]
       [ input
           [ id "add-guest-input"
           , class "focus-field"
@@ -135,7 +191,7 @@ addBtn : String -> Html Action
 addBtn guest =
   button
     [ type' "button"
-    , class "waves-effect waves-light btn col s2"
+    , class "waves-effect waves-light btn col m1"
     , onClick (AddGuest guest)
     ]
     [ text "Add" ]

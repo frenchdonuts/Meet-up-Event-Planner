@@ -132,7 +132,7 @@ update action model =
           F.update a model.startTime
       in
         ( { model
-          | startTime = Debug.log ("Start Time: " ++ updatedStartTime.value) updatedStartTime
+          | startTime = updatedStartTime
           , errMsgs = model.startTimeLTendTimeValidator ( updatedStartTime, model.endTime )
         }, Cmd.none )
 
