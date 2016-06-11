@@ -191,7 +191,7 @@ update action model =
           , curEventCreationFlow = newCurEventCreationFlow
           , pages = newNavigator flow1 flow2
           }
-        , cmd )
+        , Cmd.batch [ focusOnFirstInputAboveFold "", cmd ] )
 
     NavigateToOtherFlow ->
       ( { model
