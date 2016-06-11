@@ -113,7 +113,14 @@ update action model =
         }
 
     UpdateMaxCapacityField a ->
-      { model | maxCapacity = F.update a model.maxCapacity }
+      let
+        maxCapacity =
+          F.update a model.maxCapacity
+      in
+        { model
+        | maxCapacity = maxCapacity
+        , errMsgs = model.guestsLTmaxCapacityValidator ( model.guests, maxCapacity )
+        }
 
 
 
