@@ -1,3 +1,6 @@
+// pull in desired CSS/SASS files
+require( './styles/materialize.css' );
+
 var Elm = require('./Main');
 var meetupPlanner = Elm.Main.fullscreen();
 
