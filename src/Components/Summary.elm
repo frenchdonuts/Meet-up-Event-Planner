@@ -15,7 +15,7 @@ type Action
 view : CEF.Model -> GL.Model -> Html Action
 view cefModel glModel =
   div
-    [ class "row" ]
+    []
     [ map UpdateCreateEventForm (CEF.view cefModel)
     , div [ class "row" ] []
     , map UpdateGuestList (GL.view glModel)

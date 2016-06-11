@@ -181,10 +181,17 @@ update action model =
       ( { model | pages = back model.pages }, focusOnFirstInputAboveFold "" )
 
     FinishEventCreation eventCreationFlow ->
-      ( { model
-        | createdEventsPage = CEP.update (AddEventCreationFlow eventCreationFlow) model.createdEventsPage
-        }
-      , Cmd.none )
+      let
+        ( newCurEventCreationFlow, cmd) = newEventCreationFlow
+        flow1 =
+          SL.newSelectionList CreateEventForm [ GuestList, Summary ]
+      in
+        ( { model
+          | createdEventsPage = CEP.update (AddEventCreationFlow eventCreationFlow) model.createdEventsPage
+          , curEventCreationFlow = newCurEventCreationFlow
+          , pages = newNavigator flow1 flow2
+          }
+        , cmd )
 
     NavigateToOtherFlow ->
       ( { model

@@ -60,7 +60,7 @@ itemView eventCreationFlow =
     div
       []
       [ map NoOp (S.view createEventForm guestList)
-      , hr [ style [ ("border-top", "1px solid #8c8b8b"), ("position", "absolute") ] ] []
+      , hr [ style [ ("border-top", "1px dashed #8c8b8b") ] ] []
       -- Extra padding between events.
       , div [ class "row" ] []
       , div [ class "row" ] []
