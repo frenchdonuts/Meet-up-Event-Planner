@@ -136,7 +136,7 @@ list model =
                 [ addGuestInput model.addGuestInput
                 , addBtn model.addGuestInput
                 , div
-                    [ class "col m4 push-m1" ]
+                    [ class "col s8 m4 push-s2 push-m1" ]
                     [ Html.App.map UpdateMaxCapacityField (F.viewNoGrid model.maxCapacity) ]
                 ]
             , div
@@ -149,7 +149,7 @@ list model =
 errView : List String -> Html Action
 errView errMsgs =
   div
-    [ class "col m8 offset-m1"
+    [ class "col s12 m8 offset-s2 offset-m1"
     , style [ ("color", "#F44336") ]
     ]
     (List.map (\msg -> text msg) errMsgs)
@@ -171,7 +171,7 @@ addGuestInput model =
       )
   in
     div
-      [ class "input-field col m4 offset-m1" ]
+      [ class "input-field col s8 m4 offset-s2 offset-m1" ]
       [ input
           [ id "add-guest-input"
           , class "focus-field"
@@ -191,7 +191,7 @@ addBtn : String -> Html Action
 addBtn guest =
   button
     [ type' "button"
-    , class "waves-effect waves-light btn col m1"
+    , class "waves-effect waves-light btn col s2 m1"
     , onClick (AddGuest guest)
     ]
     [ text "Add" ]

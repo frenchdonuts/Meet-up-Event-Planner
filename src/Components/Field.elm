@@ -96,9 +96,9 @@ inputClass field =
 containerClass : Field -> String
 containerClass field =
   if field.type' == "datetime-local" then
-    "col m6"
+    "col s12 m6"
   else
-    "input-field col m6"
+    "input-field col s12 m6"
 
 
 
@@ -144,7 +144,7 @@ view field =
       []
   in
     H.div
-      [ class "input-field col m6" ]
+      [ class "input-field col s12 m6" ]
       [ H.input
           [ id (field.label ++ "-field")
           , class (inputClass field)
@@ -198,7 +198,7 @@ viewNoGrid field =
 
 {-| Use this view when must display many validation error msgs.
 -}
-bigValidatedFieldView : Field -> List (Html Action)
+bigValidatedFieldView : Field -> Html Action
 bigValidatedFieldView field =
   let
     errors =
@@ -207,32 +207,34 @@ bigValidatedFieldView field =
     divErrorStyle =
       [ ( "color", "#F44336" ) ]
   in
-    [ H.div
-        [ class "input-field col m6" ]
-        [ H.input
-            [ id (field.label ++ "-field")
-            , class (inputClass field)
-            , type' field.type'
-            , value field.value
-            , onInput SetValue
-            , onBlur Validate
-            , autocomplete True
-            , placeholder ""
-            ]
-            []
-        , label
-            [ for (field.label ++ "-field")
-            , class "active"
-            ]
-            [ text field.label ]
-        ]
-      -- Div where we display validation errors
-    , H.ul
-        [ class "col m6"
-        , style divErrorStyle
-        ]
-        errors
-    ]
+    H.div
+      []
+      [ H.div
+          [ class "input-field col s12 m6" ]
+          [ H.input
+              [ id (field.label ++ "-field")
+              , class (inputClass field)
+              , type' field.type'
+              , value field.value
+              , onInput SetValue
+              , onBlur Validate
+              , autocomplete True
+              , placeholder ""
+              ]
+              []
+          , label
+              [ for (field.label ++ "-field")
+              , class "active"
+              ]
+              [ text field.label ]
+          ]
+        -- Div where we display validation errors
+      , H.ul
+          [ class "col s12 m6"
+          , style divErrorStyle
+          ]
+          errors
+      ]
 
 
 -- Non-editable input
@@ -241,7 +243,7 @@ bigValidatedFieldView field =
 disabledView : Field -> Html Action
 disabledView field =
   H.div
-    [ class "input-field col m6" ]
+    [ class "input-field col s12 m6" ]
     [ H.input
         [ id (field.label ++ "-field")
         , disabled True

@@ -35,11 +35,13 @@ type alias Model =
 
 init : Model
 init =
-  let name' = validatedField "Name: " "text" (ifBlank "What's your name?")
+  let
+    name' =
+      validatedField "What's your name?" "text" (ifBlank "We need a name.")
   in
     { name = { name' | autofocus = True }
-    , emailAddress = validatedField "Email: " "text" (ifInvalidEmail "Please put in a valid email.")
-    , password = validatedField "Password: " "password" ifInvalidPassword
+    , emailAddress = validatedField "What's your email?" "text" (ifInvalidEmail "Please put in a valid email.")
+    , password = validatedField "Please come up with a password:" "password" ifInvalidPassword
     , bio = Bio.init
     }
 
@@ -124,22 +126,12 @@ view : Model -> Html Action
 view model =
     div
       [ class "row" ]
-      [ div
-          [ class "row" ]
-          [ map UpdateNameInput (F.view model.name),
-          --F.view (contramapWith UpdateNameInput) model.name
-          --, F.view (contramapWith UpdateEmailAddressInput) model.emailAddress
-            map UpdateEmailAddressInput (F.view model.emailAddress)
-          ]
+      [ map UpdateNameInput (F.view model.name)
+      , map UpdateEmailAddressInput (F.view model.emailAddress)
       , div [ class "row" ] []
       , div [ class "row" ] []
-      , div
-          [ class "row" ]
-          (L.map (\v -> map UpdatePasswordInput v) (F.bigValidatedFieldView model.password))
-          --(map UpdatePasswordInput (F.bigValidatedFieldView model.password))
-          --(F.bigValidatedFieldView (contramapWith UpdatePasswordInput) model.password)
+      , map UpdatePasswordInput (F.bigValidatedFieldView model.password)
       , div [ class "row" ] []
       , div [ class "row" ] []
       , map UpdateBioForm (Bio.view model.bio)
-      --, Bio.view (contramapWith UpdateBioForm) model.bio
       ]

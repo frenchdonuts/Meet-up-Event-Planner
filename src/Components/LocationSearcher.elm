@@ -316,7 +316,7 @@ view model =
       )
   in
     div
-      [ class "col s6"
+      [ class "col s12 m6"
       , style menuStyles
       -- Why won't these work!?!
       , onFocus ShowMenu

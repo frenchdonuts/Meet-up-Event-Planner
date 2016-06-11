@@ -19,9 +19,9 @@ type alias Model =
 
 
 init =
-  { employer = validatedField "Employer (optional): " "text" alwaysValid
-  , jobTitle = validatedField "Job Title (optional): " "text" alwaysValid
-  , birthday = validatedField "Birthday (optional): " "date" alwaysValid
+  { employer = validatedField "Who's your employer? (optional)" "text" alwaysValid
+  , jobTitle = validatedField "What's your job title? (optional)" "text" alwaysValid
+  , birthday = validatedField "When's your birthday? (optional)" "date" alwaysValid
   }
 
 
@@ -71,16 +71,7 @@ view model =
 --  in
     div
       []
-      [ div
-          [ class "row" ]
-          [ map SetEmployer (F.view model.employer)
-          --, F.view (contramapWith SetEmployer) model.employer
-          , map SetJobTitle (F.view model.jobTitle)
-          --, F.view (contramapWith SetJobTitle) model.jobTitle
-          ]
-      , div
-          [ class "row" ]
-          [ map SetBirthday (F.view model.birthday)
-          -- F.view (contramapWith SetBirthday) model.birthday
-          ]
+      [ map SetEmployer (F.view model.employer)
+      , map SetJobTitle (F.view model.jobTitle)
+      , map SetBirthday (F.view model.birthday)
       ]
