@@ -56,7 +56,7 @@ init =
     , addGuestInput = ""
     , nextId = 0
     , maxCapacity =
-        validatedField "How many people can come?" "text" maxCapacityValidator
+        validatedField "How many people can come?" "number" maxCapacityValidator
     , guestsLTmaxCapacityValidator =
         ifInvalid errPredicate "Too many guests! Hint: Either uninvite some people or increase the capacity."
     , errMsgs = []
