@@ -197,7 +197,7 @@ update action model =
       ( { model
         | pages = toggle model.pages
         }
-      , Cmd.none )
+      , focusOnFirstInputAboveFold "" )
 
 
 curPageIsValid : Page -> Model -> Bool
