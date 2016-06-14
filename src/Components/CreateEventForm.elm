@@ -154,10 +154,19 @@ update action model =
 
 view : Model -> Html Action
 view model =
+  let
+    eventDataListOptions =
+      [ "Meeting"
+      , "Wedding"
+      , "Sports Game"
+      , "Conference Talk"
+      , "Social"
+      ]
+  in
     div
       [ class "row" ]
       [ map UpdateNameInput (F.view model.name)
-      , map UpdateTypeInput (F.view model.type')
+      , map UpdateTypeInput (F.datalistView eventDataListOptions model.type')
       , div [ class "row" ] []
       , div [ class "row" ] []
       , map UpdateHostInput (F.view model.host)
