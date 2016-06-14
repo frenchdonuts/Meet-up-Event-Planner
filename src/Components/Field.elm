@@ -165,6 +165,7 @@ view field =
           [ text field.label ]
       ]
 
+
 viewNoGrid : Field -> Html Action
 viewNoGrid field =
   let
@@ -195,6 +196,7 @@ viewNoGrid field =
           ]
           [ text field.label ]
       ]
+
 
 {-| Use this view when must display many validation error msgs.
 -}
@@ -272,6 +274,39 @@ datalistView options field =
       ]
 
 
+lotsOfErrsView : List String -> Field -> Html Action
+lotsOfErrsView errMsgs field =
+  let
+    -- Your CSS here
+    containerStyle =
+      []
+  in
+    H.div
+      [ class "input-field col s12 m6" ]
+      [ H.input
+          [ id (field.label ++ "-field")
+          , attribute "list" (field.label ++ "-list")
+          , class (inputClass field)
+          , type' field.type'
+          , value field.value
+          , onInput SetValue
+          , onBlur OnBlur
+          , onFocus OnFocus
+          , autocomplete True
+          , autofocus field.autofocus
+          , placeholder ""
+          ]
+          []
+      , label
+          [ for (field.label ++ "-field")
+          , attribute "data-error" (join "\n" field.errors)
+          , class "active"
+          ]
+          [ text field.label ]
+      , H.div
+          [ style [ ("color", "#F44336") ] ]
+          (List.map (\msg -> text msg) errMsgs)
+      ]
 -- Non-editable input
 
 

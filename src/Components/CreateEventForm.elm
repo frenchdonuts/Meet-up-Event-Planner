@@ -24,7 +24,9 @@ type alias Model =
   , host : Field
   , location : LS.Model
   , startTime : Field
+  , startTimeErrs : List String
   , endTime : Field
+  , endTimeErrs : List String
   , optMsg : String
   , startTimeLTendTimeValidator : Validator String ( Field, Field )
   , errMsgs : List String
@@ -63,8 +65,10 @@ init =
     , location = lsModel
     , startTime =
         validatedField "When does it start?" "datetime-local" (timeValidator "Required")
+    , startTimeErrs = []
     , endTime =
         validatedField "When does it end?" "datetime-local" (timeValidator "Required")
+    , endTimeErrs = []
     , optMsg = ""
     , startTimeLTendTimeValidator =
         ifInvalid errPredicate "An event must start before it ends! Hint: Either push the start time earlier or the end time later."
@@ -133,7 +137,8 @@ update action model =
       in
         ( { model
           | startTime = updatedStartTime
-          , errMsgs = model.startTimeLTendTimeValidator ( updatedStartTime, model.endTime )
+          , startTimeErrs = model.startTimeLTendTimeValidator ( updatedStartTime, model.endTime )
+          , endTimeErrs = model.startTimeLTendTimeValidator ( updatedStartTime, model.endTime )
         }, Cmd.none )
 
     UpdateEndTimeInput a ->
@@ -143,7 +148,8 @@ update action model =
       in
         ( { model
           | endTime = updatedEndTime
-          , errMsgs = model.startTimeLTendTimeValidator ( model.startTime, updatedEndTime )
+          , startTimeErrs = model.startTimeLTendTimeValidator ( model.startTime, updatedEndTime )
+          , endTimeErrs = model.startTimeLTendTimeValidator ( model.startTime, updatedEndTime )
         }, Cmd.none )
 
     UpdateOptMsgInput msg ->
@@ -173,8 +179,8 @@ view model =
       , map UpdateLocationInput (LS.view model.location)
       , div [ class "row" ] []
       , div [ class "row" ] []
-      , map UpdateStartTimeInput (F.view model.startTime)
-      , map UpdateEndTimeInput (F.view model.endTime)
+      , map UpdateStartTimeInput (F.lotsOfErrsView model.startTimeErrs model.startTime)
+      , map UpdateEndTimeInput (F.lotsOfErrsView model.endTimeErrs model.endTime)
       , div [ class "row" ] []
       , div [ class "row" ] []
       , textarea_ model.optMsg
