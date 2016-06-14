@@ -19,7 +19,6 @@ type alias Model =
   , addGuestInput : String
   , nextId : ID
   , maxCapacity : Field
-  , guestsLTmaxCapacityValidator : Validator String ( List (ID, String), Field )
   , errMsgs : List String
   }
 
@@ -39,12 +38,24 @@ init =
               Err _ -> True
         )
         "Max capacity must be a valid integer greater than 0!"
-    errPredicate ( guests, field ) =
+  in
+    { guests = []
+    , addGuestInput = ""
+    , nextId = 0
+    , maxCapacity =
+        validatedField "How many people can come?" "number" maxCapacityValidator
+    , errMsgs = []
+    }
+
+guestsLTmaxCapacityValidator : List ( ID, String ) -> String -> List String
+guestsLTmaxCapacityValidator guests maxCapacityFieldValue =
+  let
+    errPredicate =
       let
         numOfGuests =
           Ok <| List.length guests
         maxCapacity =
-          String.toInt field.value
+          String.toInt maxCapacityFieldValue
       in
         case Result.map2 (>) numOfGuests maxCapacity of
           Ok isNumOfGuestsGTmaxCapacity ->
@@ -52,19 +63,18 @@ init =
           Err _ ->
             False
   in
-    { guests = []
-    , addGuestInput = ""
-    , nextId = 0
-    , maxCapacity =
-        validatedField "How many people can come?" "number" maxCapacityValidator
-    , guestsLTmaxCapacityValidator =
-        ifInvalid errPredicate "Too many guests! Hint: Either uninvite some people or increase the capacity."
-    , errMsgs = []
-    }
+    if errPredicate then
+      ["Too many guests! Hint: Either uninvite some people or increase the capacity."]
+    else
+      []
+
+guestListEmptyValidator =
+  ifInvalid List.isEmpty "It's going to be a lonely meetup! Please invite at least one person."
 
 isComplete : Model -> Bool
 isComplete model =
   fieldIsValid model.maxCapacity
+    && not (List.isEmpty model.guests)
     && List.isEmpty model.errMsgs
 
 
@@ -76,6 +86,7 @@ type Action
   | AddGuest String
   | RemoveGuest Int
   | UpdateMaxCapacityField F.Action
+  | OnGuestNameInputBlur
 
 
 update : Action -> Model -> Model
@@ -97,7 +108,7 @@ update action model =
           | guests = guests
           , addGuestInput = ""
           , nextId = model.nextId + 1
-          , errMsgs = model.guestsLTmaxCapacityValidator ( guests, model.maxCapacity )
+          , errMsgs = guestsLTmaxCapacityValidator guests model.maxCapacity.value
         }
 
     RemoveGuest i ->
@@ -106,10 +117,13 @@ update action model =
           not <| i == id
         guests =
           List.filter pred model.guests
+        errMsgs =
+          guestListEmptyValidator guests
+          ++ guestsLTmaxCapacityValidator guests model.maxCapacity.value
       in
         { model
           | guests = guests
-          , errMsgs = model.guestsLTmaxCapacityValidator ( guests, model.maxCapacity )
+          , errMsgs = errMsgs
         }
 
     UpdateMaxCapacityField a ->
@@ -119,8 +133,13 @@ update action model =
       in
         { model
         | maxCapacity = maxCapacity
-        , errMsgs = model.guestsLTmaxCapacityValidator ( model.guests, maxCapacity )
+        , errMsgs = guestsLTmaxCapacityValidator model.guests maxCapacity.value
         }
+
+    OnGuestNameInputBlur ->
+      { model
+      | errMsgs = guestListEmptyValidator model.guests
+      }
 
 
 
@@ -184,6 +203,7 @@ addGuestInput model =
           , class "focus-field"
           , type' "text"
           , onInput SetAddGuestInput
+          , onBlur OnGuestNameInputBlur
             -- Allow User to add guest by pressing ENTER
           , onWithOptions "keypress" options keyDownDecoder
           , value model
